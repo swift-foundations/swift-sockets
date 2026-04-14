@@ -17,6 +17,7 @@ let package = Package(
     dependencies: [
         .package(path: "../swift-io"),
         .package(path: "../swift-kernel"),
+        .package(path: "../../swift-primitives/swift-memory-primitives"),
     ],
     targets: [
         .target(
@@ -24,6 +25,7 @@ let package = Package(
             dependencies: [
                 .product(name: "IO", package: "swift-io"),
                 .product(name: "Kernel", package: "swift-kernel"),
+                .product(name: "Memory Primitives", package: "swift-memory-primitives"),
             ]
         ),
     ],
