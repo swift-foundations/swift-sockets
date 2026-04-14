@@ -28,6 +28,16 @@ let package = Package(
                 .product(name: "Memory Primitives", package: "swift-memory-primitives"),
             ]
         ),
+        .testTarget(
+            name: "Sockets Tests",
+            dependencies: [
+                "Sockets",
+                .product(name: "IO", package: "swift-io"),
+                .product(name: "Kernel", package: "swift-kernel"),
+                .product(name: "Memory Primitives", package: "swift-memory-primitives"),
+            ],
+            path: "Tests/Sockets Tests"
+        ),
     ],
     swiftLanguageModes: [.v6]
 )
