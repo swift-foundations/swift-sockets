@@ -4,7 +4,7 @@
 //
 
 public import IO
-public import Kernel
+import Kernel
 
 extension Sockets.TCP {
 
@@ -45,7 +45,7 @@ extension Sockets.TCP {
         internal let _io: IO
 
         public nonisolated var unownedExecutor: UnownedSerialExecutor {
-            _io.unownedExecutor
+            unsafe _io.unownedExecutor
         }
 
         internal init(fd: consuming Kernel.Socket.Descriptor, io: IO) {
@@ -155,7 +155,7 @@ extension Sockets.TCP.Listener {
             "Sockets.TCP.Listener.port() is only valid for IPv4 listeners; got \(storage.family)."
         )
         // sockaddr_in layout: sa_family_t (2 bytes) | sin_port (2 bytes, big-endian).
-        return storage.withUnsafeBytes { raw, _ in
+        return unsafe storage.withUnsafeBytes { raw, _ in
             let networkPort = unsafe raw.load(fromByteOffset: 2, as: UInt16.self)
             return UInt16(bigEndian: networkPort)
         }

@@ -4,8 +4,8 @@
 //
 
 public import IO
-public import Kernel
-public import Memory_Primitives
+import Kernel
+import Memory_Primitives
 
 extension Sockets.TCP {
 
