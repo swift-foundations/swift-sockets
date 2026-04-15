@@ -362,10 +362,43 @@ Parameterized via swift-testing `@Test(arguments:)`. Each cell runs the
 full echo round-trip; completions cell is Linux-only per swift-io
 constraint #3.
 
+## Known Limitations Surfaced
+
+### Concurrent `io.ready` on the same fd crashes under events/completions
+
+**Discovered**: Phase 3A test parameterization of `MultipleConnections`.
+Three concurrent `listener.accept()` calls on one listener fd each
+call `io.ready(from: _fd, interest: .read)`. Under the events
+strategy, each `io.ready` registers a receiver on the per-fd
+`Async.Channel.Unbounded`. The channel enforces a single-suspended-
+receiver invariant (`Async_Channel_Primitives/Async.Channel.Unbounded.State.swift:186`);
+the second concurrent receiver triggers a precondition failure.
+
+**Not a Phase 3A regression.** The contract was always single-receiver.
+Phase 2A's blocking-strategy tests never hit it because the blocking
+`_ready` is a no-op and the actor serializes accept calls. The
+limitation exists for any consumer that concurrently awaits readiness
+on the same fd under events/completions strategies.
+
+**Impact**: A production TCP listener under `IO.events()` or
+`IO.completions()` that spawns N accept tasks concurrently will crash.
+Single-accept-at-a-time (sequential accept loop) works correctly.
+
+**Resolution**: `IO.Events.Actor` and `IO.Completions.Actor` need
+per-operation (not per-fd) channel routing to support concurrent
+operations on the same fd. Scope: Phase 2E or Phase 3B, not 3A.
+
+**Phase 3A mitigation**: `MultipleConnections` test stays blocking-only.
+Echo parameterization (single accept per cell) covers all four
+strategies.
+
 ## Changes Required (Phase 3A)
 
 - **iso-9945**: Kernel.Descriptor overloads on Bind / Listen / Accept /
-  Name (per table above).
+  Name (per table above). `@frozen` on `Kernel.Socket.Accept.Result`
+  (user-authorized mid-session).
 - **swift-posix**: Kernel.Descriptor overload on POSIX.Kernel.Socket.Accept.accept.
-- **swift-sockets**: Listener refactor; non-blocking fd in init; EAGAIN-retry
-  accept loop; parameterized Echo + MultipleConnections tests.
+- **swift-sockets**: Listener refactor; `.blocking` / `.reactive` factory
+  split; EAGAIN-retry accept loop; parameterized Echo test (4 cells);
+  BlockingIdleCPU no-hot-spin CPU assertion; MultipleConnections
+  blocking-only.

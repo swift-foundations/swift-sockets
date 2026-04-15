@@ -3,10 +3,19 @@
 //  swift-sockets
 //
 //  Integration test: three concurrent clients echoed through one
-//  Sockets.TCP.Listener. Documents the thread-per-listener serialization
-//  model — every accept and the subsequent read/write/close for each
-//  accepted connection run on the listener's shared IO thread. Parallelism
-//  is not a bug here; it is the expected ownership semantic:
+//  Sockets.TCP.Listener. Blocking-strategy only for Phase 3A — concurrent
+//  `io.ready` calls on the same fd under the events/completions strategies
+//  hit swift-io's single-suspended-receiver invariant on the per-fd
+//  readiness channel (Async_Channel_Primitives/Async.Channel.Unbounded.State.swift:186).
+//  That is a pre-existing swift-io limitation, not a Phase 3A regression.
+//  Parameterizing this suite across reactor-backed strategies is deferred
+//  until swift-io's events/completions actor supports fan-out readiness
+//  signalling (likely Phase 2E or Phase 3B).
+//
+//  Documents the thread-per-listener serialization model — every accept
+//  and the subsequent read/write/close for each accepted connection run
+//  on the listener's shared IO thread. Parallelism is not a bug here; it
+//  is the expected ownership semantic:
 //
 //  - One listener = one IO = one OS thread.
 //  - All three accepts and their echo round-trips serialize through that
@@ -32,11 +41,11 @@ extension Sockets.TCP.Listener.Tests {
 
 extension Sockets.TCP.Listener.Tests.MultipleConnections {
 
-    @Test("three concurrent connections echoed correctly round-trip")
+    @Test("three concurrent connections echoed correctly round-trip (blocking strategy)")
     func threeConcurrentRoundTrips() async throws {
         let serverIO = IO.blocking()
         let clientIO = IO.blocking()
-        let listener = try Sockets.TCP.Listener(
+        let listener = try Sockets.TCP.Listener.blocking(
             address: .loopback(port: 0),
             io: serverIO
         )

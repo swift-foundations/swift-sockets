@@ -3,10 +3,15 @@
 //  swift-sockets
 //
 //  Integration test: single TCP connection echoed round-trip through a
-//  Sockets.TCP.Listener. Validates the TCA26 shared-executor composition
-//  end-to-end — the listener forwards its unownedExecutor to the IO's, and
-//  accept + read + write + close all run on the IO's dedicated thread via
-//  actor isolation.
+//  Sockets.TCP.Listener. Parameterized over Phase 3A's IO strategy matrix
+//  (blocking / events / completions (Linux) / default). Each cell pairs
+//  the strategy-appropriate Listener factory (.blocking or .reactive) —
+//  see Sockets.TCP.Listener docs for the pairing contract.
+//
+//  Validates the TCA26 shared-executor composition end-to-end — the
+//  listener forwards its unownedExecutor to the IO's, and accept + read
+//  + write + close all run on the IO's dedicated thread via actor
+//  isolation.
 //
 
 import Testing
@@ -22,14 +27,11 @@ extension Sockets.TCP.Listener.Tests {
 
 extension Sockets.TCP.Listener.Tests.Echo {
 
-    @Test("single connection echoes payload round-trip")
-    func singleConnection() async throws {
-        let serverIO = IO.blocking()
+    @Test("single connection echoes payload round-trip per IO strategy",
+          arguments: Sockets.TCP.Listener.Tests.Strategy.allCases)
+    func singleConnection(strategy: Sockets.TCP.Listener.Tests.Strategy) async throws {
+        let (_, listener) = try await Sockets.TCP.Listener.Tests.Strategy.makeServer(strategy)
         let clientIO = IO.blocking()
-        let listener = try Sockets.TCP.Listener(
-            address: .loopback(port: 0),
-            io: serverIO
-        )
         let port = try await listener.port()
 
         let payload: [UInt8] = [0xDE, 0xAD, 0xBE, 0xEF, 0xCA, 0xFE]
