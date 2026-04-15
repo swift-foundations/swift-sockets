@@ -87,3 +87,41 @@ extension Sockets.TCP.Connection {
         await io.close(consume descriptor)
     }
 }
+
+// MARK: - Half-Close
+
+extension Sockets.TCP.Connection {
+
+    /// Shuts down one or both directions of the connection.
+    ///
+    /// `shutdown(.write)` sends a TCP FIN to the peer — the peer's next
+    /// `read` returns 0 (EOF). The local side can still read until the
+    /// peer also shuts down its write direction (or closes). This is the
+    /// standard half-close pattern for graceful TCP teardown.
+    ///
+    /// `shutdown(.read)` discards further incoming data. The peer may or
+    /// may not see an RST depending on whether it sends after the local
+    /// read-side shutdown.
+    ///
+    /// `shutdown(.both)` is equivalent to `.read` + `.write` in a single
+    /// syscall.
+    ///
+    /// ## Ownership
+    ///
+    /// `borrowing` — the connection remains valid after a partial shutdown.
+    /// A write-shutdown connection can still read; a read-shutdown
+    /// connection can still write. Only ``close()`` consumes the
+    /// connection.
+    public borrowing func shutdown(
+        how: Kernel.Socket.Shutdown.How
+    ) throws(Sockets.Error) {
+        do throws(Kernel.Socket.Shutdown.Error) {
+            try Kernel.Socket.Shutdown.shutdown(descriptor, how: how)
+        } catch {
+            switch error {
+            case .platform(let err): throw .platform(err.code)
+            case .handle, .io: throw .platform(Kernel.Error.Code.current())
+            }
+        }
+    }
+}

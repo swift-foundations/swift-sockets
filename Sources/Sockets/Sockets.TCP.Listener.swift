@@ -177,7 +177,7 @@ extension Sockets.TCP.Listener {
             do throws(IO.Error) {
                 try await _io.ready(from: _fd, interest: .read)
             } catch {
-                throw .platform(Kernel.Error.Code.current())
+                throw Sockets.Error(error)
             }
 
             let result: Kernel.Socket.Accept.Result

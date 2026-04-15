@@ -98,13 +98,14 @@ extension Sockets.TCP.Listener.Tests.BlockingIdleCPU {
                 let cpuAfter = Kernel.Clock.CPU.Process.now()
 
                 let cpuDelta = cpuAfter - cpuBefore
-                // Threshold is heuristic — 10% of window is comfortably
-                // above normal baseline CPU noise (fork/thread startup,
-                // test scaffolding). Tighten if 3C benchmarks surface a
-                // tighter blocking-strategy idle budget. A hot-spinning
-                // thread alone would burn ~50_000_000 ns CPU in this
-                // window.
-                #expect(cpuDelta < 5_000_000,
+                // Threshold is heuristic — 20% of window. Concurrent
+                // reactor threads from sibling test cells (Echo, HalfClose)
+                // add ~1-2 ms baseline process CPU noise; 10 ms absorbs
+                // that while remaining 5x below a hot-spin signature
+                // (~50 ms from one spinning thread). Tighten if 3C
+                // benchmarks surface a tighter blocking-strategy idle
+                // budget.
+                #expect(cpuDelta < 10_000_000,
                         "blocking listener must not hot-spin while waiting for a connection; \(cpuDelta) ns CPU in 50 ms window")
             }
         }

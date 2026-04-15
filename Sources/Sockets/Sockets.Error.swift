@@ -4,6 +4,7 @@
 //
 
 public import Kernel
+internal import IO_Core
 
 extension Sockets {
     /// Error type for socket-specific operations.
@@ -24,7 +25,25 @@ extension Sockets {
         /// Socket is not connected (ENOTCONN). Socket-only.
         case notConnected
 
+        /// The task was cancelled during an IO operation.
+        case cancelled
+
+        /// The IO runtime is shutting down.
+        case ioShutdown
+
         /// Platform error code (POSIX errno or Win32) not mapped above.
         case platform(Kernel.Error.Code)
+
+        /// Maps an `IO.Error` to a `Sockets.Error`, preserving cancellation
+        /// and shutdown semantics rather than erasing them to `.platform`.
+        internal init(_ ioError: IO.Error) {
+            switch ioError {
+            case .cancelled: self = .cancelled
+            case .shutdown: self = .ioShutdown
+            case .brokenPipe: self = .platform(.POSIX.EPIPE)
+            case .timeout: self = .platform(Kernel.Error.Code.current())
+            case .platform(let code): self = .platform(code)
+            }
+        }
     }
 }
