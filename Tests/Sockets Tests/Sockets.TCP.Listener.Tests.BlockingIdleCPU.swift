@@ -21,6 +21,17 @@
 //  tighter idle budget.
 //
 
+// WHY macOS-only: CLOCK_PROCESS_CPUTIME_ID measures all threads in the
+// process. In Docker after a cold build, swift-testing runner threads
+// inflate the baseline (~100 ms) past the hot-spin delta (~50 ms),
+// making the assertion unreliable. The code path through
+// Listener.accept() → io.ready → accept(2) is platform-identical;
+// if macOS catches a hot-spin regression, Linux has the same path.
+// The Echo parameterized test proves blocking-strategy correctness
+// (round-trip, no hang) on Linux independently.
+
+#if os(macOS)
+
 import Testing
 import Kernel
 import Memory_Primitives
@@ -99,3 +110,5 @@ extension Sockets.TCP.Listener.Tests.BlockingIdleCPU {
         }
     }
 }
+
+#endif
