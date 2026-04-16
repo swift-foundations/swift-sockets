@@ -55,8 +55,8 @@ extension Sockets.TCP.Listener.Tests {
                 return (io, listener)
             #if os(Linux)
             case .completions:
-                let completions = try IO.Completions()
-                let io = IO.completions(on: completions)
+                let actor = try IO.Completion.Actor()
+                let io = IO.completions(on: actor)
                 let listener = try Sockets.TCP.Listener.reactive(
                     address: .loopback(port: 0),
                     io: io
