@@ -46,8 +46,8 @@ extension Sockets.TCP.Listener.Tests {
                 )
                 return (io, listener)
             case .events:
-                let events = try IO.Events()
-                let io = IO.events(on: events)
+                let actor = try IO.Event.Actor()
+                let io = IO.events(on: actor)
                 let listener = try Sockets.TCP.Listener.reactive(
                     address: .loopback(port: 0),
                     io: io
