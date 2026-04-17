@@ -60,7 +60,7 @@ extension Sockets.TCP {
         internal let _io: IO
 
         public nonisolated var unownedExecutor: UnownedSerialExecutor {
-            unsafe _io.unownedExecutor
+            _io.unownedExecutor()
         }
 
         internal init(fd: consuming Kernel.Descriptor, io: IO) {
