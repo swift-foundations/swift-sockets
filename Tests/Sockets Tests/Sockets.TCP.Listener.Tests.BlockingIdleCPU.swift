@@ -105,8 +105,8 @@ extension Sockets.TCP.Listener.Tests.BlockingIdleCPU {
                 // (~50 ms from one spinning thread). Tighten if 3C
                 // benchmarks surface a tighter blocking-strategy idle
                 // budget.
-                #expect(cpuDelta < 10_000_000,
-                        "blocking listener must not hot-spin while waiting for a connection; \(cpuDelta) ns CPU in 50 ms window")
+                #expect(cpuDelta < .milliseconds(10),
+                        "blocking listener must not hot-spin while waiting for a connection; \(cpuDelta) CPU in 50 ms window")
             }
         }
     }
