@@ -45,8 +45,8 @@ extension Sockets.TCP.Listener.Tests {
 
 extension Sockets.TCP.Listener.Tests.BlockingIdleCPU {
 
-    @Test("blocking listener sleeps in kernel during idle accept")
-    func idleAcceptDoesNotHotSpin() async throws {
+    @Test
+    func `blocking listener sleeps in kernel during idle accept`() async throws {
         let serverIO = IO.blocking()
         let clientIO = IO.blocking()
         let listener = try Sockets.TCP.Listener.blocking(

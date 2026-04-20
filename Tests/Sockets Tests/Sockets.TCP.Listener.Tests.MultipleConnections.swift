@@ -41,8 +41,8 @@ extension Sockets.TCP.Listener.Tests {
 
 extension Sockets.TCP.Listener.Tests.MultipleConnections {
 
-    @Test("three concurrent connections echoed correctly round-trip (blocking strategy)")
-    func threeConcurrentRoundTrips() async throws {
+    @Test
+    func `three concurrent connections echoed correctly round-trip (blocking strategy)`() async throws {
         let serverIO = IO.blocking()
         let clientIO = IO.blocking()
         let listener = try Sockets.TCP.Listener.blocking(
