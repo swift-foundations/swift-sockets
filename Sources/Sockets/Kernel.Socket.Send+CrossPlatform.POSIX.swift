@@ -72,7 +72,7 @@ extension Kernel.Socket.Send {
         from span: Span<UInt8>,
         options: Kernel.Socket.Message.Options = [],
         address: Kernel.Socket.Address.Storage,
-        addressLength: UInt32
+        addressLength: Kernel.Socket.Address.Length
     ) throws(Kernel.Socket.Error) -> Int {
         try POSIX.Kernel.Socket.Send.to(
             descriptor,

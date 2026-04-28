@@ -71,7 +71,7 @@ extension Kernel.Socket.Receive {
         _ descriptor: borrowing Kernel.Socket.Descriptor,
         into span: inout MutableSpan<UInt8>,
         options: Kernel.Socket.Message.Options = []
-    ) throws(Kernel.Socket.Error) -> (count: Int, address: Kernel.Socket.Address.Storage, addressLength: UInt32) {
+    ) throws(Kernel.Socket.Error) -> (count: Int, address: Kernel.Socket.Address.Storage, addressLength: Kernel.Socket.Address.Length) {
         try POSIX.Kernel.Socket.Receive.from(descriptor, into: &span, options: options)
     }
 

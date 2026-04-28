@@ -61,7 +61,7 @@ extension Kernel.Socket.Connect {
     public static func connect(
         _ descriptor: borrowing Kernel.Socket.Descriptor,
         address: Kernel.Socket.Address.Storage,
-        length: UInt32
+        length: Kernel.Socket.Address.Length
     ) throws(Kernel.Socket.Error) {
         try POSIX.Kernel.Socket.Connect.connect(descriptor, address: address, length: length)
     }
