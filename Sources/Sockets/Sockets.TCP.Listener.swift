@@ -121,7 +121,7 @@ extension Sockets.TCP.Listener {
         } catch {
             switch error {
             case .platform(let err): throw .platform(err.code)
-            case .handle, .io: throw .platform(Kernel.Error.Code.current())
+            case .handle, .io: throw .platform(Error_Primitives.Error.Code.current())
             }
         }
 

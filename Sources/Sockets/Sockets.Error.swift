@@ -32,7 +32,7 @@ extension Sockets {
         case ioShutdown
 
         /// Platform error code (POSIX errno or Win32) not mapped above.
-        case platform(Kernel.Error.Code)
+        case platform(Error_Primitives.Error.Code)
 
         /// Maps an `IO.Error` to a `Sockets.Error`, preserving cancellation
         /// and shutdown semantics rather than erasing them to `.platform`.
@@ -41,7 +41,7 @@ extension Sockets {
             case .cancelled: self = .cancelled
             case .shutdown: self = .ioShutdown
             case .brokenPipe: self = .platform(.POSIX.EPIPE)
-            case .timeout: self = .platform(Kernel.Error.Code.current())
+            case .timeout: self = .platform(Error_Primitives.Error.Code.current())
             case .platform(let code): self = .platform(code)
             }
         }
