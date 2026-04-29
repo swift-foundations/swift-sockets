@@ -93,9 +93,9 @@ extension Sockets.TCP.Listener.Tests.BlockingIdleCPU {
                 await clientIO.close(consume descriptor)
             }
             group.addTask {
-                let cpuBefore = Kernel.Clock.CPU.Process.now()
+                let cpuBefore = Clock.CPU.Process.now()
                 try? await Task.sleep(for: .milliseconds(50))
-                let cpuAfter = Kernel.Clock.CPU.Process.now()
+                let cpuAfter = Clock.CPU.Process.now()
 
                 let cpuDelta = cpuAfter - cpuBefore
                 // Threshold is heuristic — 20% of window. Concurrent
