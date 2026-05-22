@@ -6,6 +6,7 @@
 public import IO
 import Kernel
 import Memory_Primitives
+import Memory_Buffer_Primitives
 
 extension Sockets.TCP {
 

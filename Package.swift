@@ -18,6 +18,7 @@ let package = Package(
         .package(path: "../swift-io"),
         .package(path: "../swift-kernel"),
         .package(path: "../../swift-primitives/swift-memory-primitives"),
+        .package(path: "../../swift-primitives/swift-memory-buffer-primitives"),
         .package(path: "../../swift-ietf/swift-rfc-791"),
         .package(path: "../../swift-ietf/swift-rfc-4291"),
     ],
@@ -28,6 +29,7 @@ let package = Package(
                 .product(name: "IO", package: "swift-io"),
                 .product(name: "Kernel", package: "swift-kernel"),
                 .product(name: "Memory Primitives", package: "swift-memory-primitives"),
+                .product(name: "Memory Buffer Primitives", package: "swift-memory-buffer-primitives"),
                 .product(name: "RFC 791", package: "swift-rfc-791"),
                 .product(name: "RFC 4291", package: "swift-rfc-4291"),
             ]
@@ -39,6 +41,7 @@ let package = Package(
                 .product(name: "IO", package: "swift-io"),
                 .product(name: "Kernel", package: "swift-kernel"),
                 .product(name: "Memory Primitives", package: "swift-memory-primitives"),
+                .product(name: "Memory Buffer Primitives", package: "swift-memory-buffer-primitives"),
             ],
             path: "Tests/Sockets Tests"
         ),
