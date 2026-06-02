@@ -15,12 +15,12 @@ let package = Package(
         .library(name: "Sockets", targets: ["Sockets"]),
     ],
     dependencies: [
-        .package(path: "../swift-io"),
-        .package(path: "../swift-kernel"),
-        .package(path: "../../swift-primitives/swift-memory-primitives"),
-        .package(path: "../../swift-primitives/swift-memory-buffer-primitives"),
-        .package(path: "../../swift-ietf/swift-rfc-791"),
-        .package(path: "../../swift-ietf/swift-rfc-4291"),
+        .package(url: "https://github.com/swift-foundations/swift-io.git", branch: "main"),
+        .package(url: "https://github.com/swift-foundations/swift-kernel.git", branch: "main"),
+        .package(url: "https://github.com/swift-primitives/swift-memory-primitives.git", branch: "main"),
+        .package(url: "https://github.com/swift-primitives/swift-memory-buffer-primitives.git", branch: "main"),
+        .package(url: "https://github.com/swift-ietf/swift-rfc-791.git", branch: "main"),
+        .package(url: "https://github.com/swift-ietf/swift-rfc-4291.git", branch: "main"),
     ],
     targets: [
         .target(
