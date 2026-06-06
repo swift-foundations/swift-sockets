@@ -6,7 +6,7 @@
 public import IO
 import Kernel
 import Memory_Primitives
-import Memory_Buffer_Primitives
+import Span_Raw_Primitives
 
 extension Sockets.TCP {
 
@@ -67,14 +67,14 @@ extension Sockets.TCP.Connection {
     /// poll-then-read vs completions CQE wait) is supplied by the `IO` value
     /// the connection was constructed with.
     public borrowing func read(
-        into buffer: Memory.Buffer.Mutable
+        into buffer: Span.Raw.Mutable
     ) async throws(IO.Error) -> Int {
         try await io.read(from: descriptor, into: buffer)
     }
 
     /// Write up to `buffer.count` bytes from `buffer`. Returns bytes written.
     public borrowing func write(
-        from buffer: Memory.Buffer
+        from buffer: Span.Raw
     ) async throws(IO.Error) -> Int {
         try await io.write(to: descriptor, from: buffer)
     }

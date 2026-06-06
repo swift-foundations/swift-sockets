@@ -4,7 +4,7 @@
 //
 
 public import Kernel
-internal import IO_Core
+internal import IO
 
 extension Sockets {
     /// Error type for socket-specific operations.

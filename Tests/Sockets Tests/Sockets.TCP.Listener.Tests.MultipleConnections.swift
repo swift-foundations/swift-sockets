@@ -33,6 +33,7 @@ import Kernel
 import Memory_Primitives
 import IO
 import Sockets
+import Span_Raw_Primitives
 
 extension Sockets.TCP.Listener.Tests {
     @Suite("Sockets.TCP.Listener — multiple connections")
@@ -109,14 +110,14 @@ private func serverSideEcho(listener: Sockets.TCP.Listener) async throws -> [UIn
     defer { unsafe buffer.deallocate() }
 
     let readCount = try await connection.read(
-        into: unsafe Memory.Buffer.Mutable(buffer)
+        into: unsafe Span.Raw.Mutable(buffer)
     )
 
     let payloadSlice = unsafe UnsafeRawBufferPointer(
         start: buffer.baseAddress,
         count: readCount
     )
-    _ = try await connection.write(from: unsafe Memory.Buffer(payloadSlice))
+    _ = try await connection.write(from: unsafe Span.Raw(payloadSlice))
 
     await connection.close()
 
@@ -146,7 +147,7 @@ private func clientSideRoundTrip(
     for (i, byte) in payload.enumerated() {
         unsafe writePtr[i] = byte
     }
-    let writeBuffer = unsafe Memory.Buffer(UnsafeRawBufferPointer(writePtr))
+    let writeBuffer = unsafe Span.Raw(UnsafeRawBufferPointer(writePtr))
     _ = try await io.write(to: descriptor, from: writeBuffer)
 
     let readPtr = UnsafeMutableRawBufferPointer.allocate(
@@ -156,7 +157,7 @@ private func clientSideRoundTrip(
     defer { unsafe readPtr.deallocate() }
     let readCount = try await io.read(
         from: descriptor,
-        into: unsafe Memory.Buffer.Mutable(readPtr)
+        into: unsafe Span.Raw.Mutable(readPtr)
     )
 
     await io.close(consume descriptor)

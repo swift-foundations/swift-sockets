@@ -22,6 +22,7 @@ import Kernel
 import Memory_Primitives
 import IO
 import Sockets
+import Span_Raw_Primitives
 
 extension Sockets.TCP.Listener.Tests {
     @Suite("Sockets.TCP.Listener — half-close")
@@ -48,16 +49,16 @@ extension Sockets.TCP.Listener.Tests.HalfClose {
                 defer { unsafe buf.deallocate() }
 
                 // Read the payload.
-                let n = try await conn.read(into: unsafe Memory.Buffer.Mutable(buf))
+                let n = try await conn.read(into: unsafe Span.Raw.Mutable(buf))
                 #expect(n == payload.count, "Server read the full payload before EOF.")
 
                 // Read again — should get EOF (0) because client did shutdown(.write).
-                let eof = try await conn.read(into: unsafe Memory.Buffer.Mutable(buf))
+                let eof = try await conn.read(into: unsafe Span.Raw.Mutable(buf))
                 #expect(eof == 0, "Server sees EOF after client shutdown(.write).")
 
                 // Echo back what we read.
                 let echo = unsafe UnsafeRawBufferPointer(start: buf.baseAddress, count: n)
-                _ = try await conn.write(from: unsafe Memory.Buffer(echo))
+                _ = try await conn.write(from: unsafe Span.Raw(echo))
 
                 // Half-close server's write side — client will see EOF.
                 try conn.shutdown(how: .write)
@@ -79,7 +80,7 @@ extension Sockets.TCP.Listener.Tests.HalfClose {
                 let wbuf = UnsafeMutableRawBufferPointer.allocate(byteCount: payload.count, alignment: 1)
                 defer { unsafe wbuf.deallocate() }
                 for (i, b) in payload.enumerated() { unsafe wbuf[i] = b }
-                _ = try await clientIO.write(to: descriptor, from: unsafe Memory.Buffer(UnsafeRawBufferPointer(wbuf)))
+                _ = try await clientIO.write(to: descriptor, from: unsafe Span.Raw(UnsafeRawBufferPointer(wbuf)))
 
                 // Half-close write — sends FIN to server.
                 try Kernel.Socket.Shutdown.shutdown(descriptor, how: .write)
@@ -87,7 +88,7 @@ extension Sockets.TCP.Listener.Tests.HalfClose {
                 // Read the echo back.
                 let rbuf = UnsafeMutableRawBufferPointer.allocate(byteCount: 1024, alignment: 1)
                 defer { unsafe rbuf.deallocate() }
-                let n = try await clientIO.read(from: descriptor, into: unsafe Memory.Buffer.Mutable(rbuf))
+                let n = try await clientIO.read(from: descriptor, into: unsafe Span.Raw.Mutable(rbuf))
                 #expect(n == payload.count, "Client read the echoed payload.")
 
                 var received: [UInt8] = []
@@ -96,7 +97,7 @@ extension Sockets.TCP.Listener.Tests.HalfClose {
                 #expect(received == payload, "Client received its own payload echoed back.")
 
                 // Read again — should get EOF because server did shutdown(.write).
-                let eof = try await clientIO.read(from: descriptor, into: unsafe Memory.Buffer.Mutable(rbuf))
+                let eof = try await clientIO.read(from: descriptor, into: unsafe Span.Raw.Mutable(rbuf))
                 #expect(eof == 0, "Client sees EOF after server shutdown(.write).")
 
                 await clientIO.close(consume descriptor)
