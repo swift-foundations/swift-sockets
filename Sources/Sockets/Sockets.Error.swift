@@ -4,46 +4,38 @@
 //
 
 public import Kernel
-internal import IO
 
 extension Sockets {
     /// Error type for socket-specific operations.
     ///
-    /// Holds the socket-flavored cases that do not belong in the domain-
-    /// agnostic `IO.Error` because they describe TCP- or socket-specific
-    /// conditions (`ECONNRESET`, `ENOTCONN`). Migrated from swift-io's
-    /// `IO.Error` under the domain-agnostic architecture (see
-    /// swift-io/Research/io-architecture.md v1.1).
+    /// The error domain of ``Sockets/Capabilities`` — every capability
+    /// closure throws this type. Holds the socket-flavored cases that do
+    /// not belong in a domain-agnostic byte-ops error because they
+    /// describe TCP- or socket-specific conditions (`ECONNRESET`,
+    /// `ENOTCONN`).
     ///
-    /// Phase 1 establishes the destination type; it is not yet consumed —
-    /// socket code still lives under swift-io/Sources/IO Events/ and
-    /// swift-io/Sources/IO Completions/ pending Phase 2 migration.
+    /// Cross-layer mappings from the kernel byte-op error types live in
+    /// `Sockets.Error+Kernel.swift`; the events / completions strategies
+    /// (Phase 2B / 2C) add their own strategy-failure mappings, which
+    /// produce ``cancelled`` and ``ioShutdown``.
     public enum Error: Swift.Error, Equatable {
         /// Peer reset the connection (ECONNRESET). TCP-specific.
         case connectionReset
 
-        /// Socket is not connected (ENOTCONN). Socket-only.
+        /// Socket is not connected (ENOTCONN). Socket-only. Reserved
+        /// for the socket-op layer (shutdown / send on an unconnected
+        /// socket); not yet produced by the Phase 2A mappings.
         case notConnected
 
-        /// The task was cancelled during an IO operation.
+        /// The task was cancelled during an IO operation. Produced by
+        /// the reactor / proactor strategies (Phase 2B / 2C).
         case cancelled
 
-        /// The IO runtime is shutting down.
+        /// The IO runtime is shutting down. Produced by the reactor /
+        /// proactor strategies (Phase 2B / 2C).
         case ioShutdown
 
         /// Platform error code (POSIX errno or Win32) not mapped above.
         case platform(Error_Primitives.Error.Code)
-
-        /// Maps an `IO.Error` to a `Sockets.Error`, preserving cancellation
-        /// and shutdown semantics rather than erasing them to `.platform`.
-        internal init(_ ioError: IO.Error) {
-            switch ioError {
-            case .cancelled: self = .cancelled
-            case .shutdown: self = .ioShutdown
-            case .brokenPipe: self = .platform(.POSIX.EPIPE)
-            case .timeout: self = .platform(Error_Primitives.Error.Code.current())
-            case .platform(let code): self = .platform(code)
-            }
-        }
     }
 }

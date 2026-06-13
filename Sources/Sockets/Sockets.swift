@@ -6,18 +6,22 @@
 //
 //  Socket-specific ergonomics (half-close, split into reader/writer, shutdown
 //  state, address parsing, bind/listen/setsockopt, TCP connection management,
-//  UDP datagrams, DNS resolution) live here. swift-sockets builds on top of
-//  swift-io's domain-agnostic I/O witness over `Kernel.Descriptor` and — for
-//  future events/completions strategies — the reactor and proactor runtimes
-//  retained inside swift-io pending their Phase 2 refactor.
+//  UDP datagrams, DNS resolution) live here. swift-sockets composes the
+//  generic `IO<Capabilities>` bundle from swift-io-primitives with its own
+//  ``Sockets/Capabilities`` and per-strategy factories; the strategy
+//  runtimes (reactor / proactor actors) live in swift-io.
 //
-//  See swift-io/Research/io-architecture.md v1.1 for the layering.
+//  See swift-io/Research/io-architecture.md for the layering and
+//  swift-io-primitives' `IO.swift` for the per-(domain × strategy)
+//  composition pattern.
 //
 
 /// Root namespace for the Sockets domain package.
 ///
-/// Phase 1 holds only the migrated `Sockets.Error` type. Socket-specific
-/// consumer types (`IO.Event.Channel*`, `IO.Completion.Channel*`) migrate
-/// into this namespace during Phase 2 when the events/completions witness
-/// factories are introduced on swift-io's side.
+/// Groups the types that parameterize the generic `IO` bundle for the
+/// sockets domain: ``Sockets/Capabilities`` (what operations exist),
+/// ``Sockets/Error`` (the error domain), and the per-strategy factories
+/// (`IO<Sockets.Capabilities>.blocking()` for Phase 2A; events /
+/// completions follow in Phase 2B / 2C). The TCP endpoints live under
+/// ``Sockets/TCP``.
 public enum Sockets {}

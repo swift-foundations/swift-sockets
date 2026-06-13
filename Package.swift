@@ -17,10 +17,9 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/swift-foundations/swift-io.git", branch: "main"),
         .package(url: "https://github.com/swift-foundations/swift-kernel.git", branch: "main"),
-        .package(url: "https://github.com/swift-primitives/swift-memory-primitives.git", branch: "main"),
+        .package(url: "https://github.com/swift-foundations/swift-threads.git", branch: "main"),
+        .package(url: "https://github.com/swift-foundations/swift-executors.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-span-primitives.git", branch: "main"),
-        .package(url: "https://github.com/swift-ietf/swift-rfc-791.git", branch: "main"),
-        .package(url: "https://github.com/swift-ietf/swift-rfc-4291.git", branch: "main"),
     ],
     targets: [
         .target(
@@ -28,10 +27,9 @@ let package = Package(
             dependencies: [
                 .product(name: "IO", package: "swift-io"),
                 .product(name: "Kernel", package: "swift-kernel"),
-                .product(name: "Memory Primitives", package: "swift-memory-primitives"),
+                .product(name: "Thread Actor", package: "swift-threads"),
+                .product(name: "Executors", package: "swift-executors"),
                 .product(name: "Span Raw Primitives", package: "swift-span-primitives"),
-                .product(name: "RFC 791", package: "swift-rfc-791"),
-                .product(name: "RFC 4291", package: "swift-rfc-4291"),
             ]
         ),
         .testTarget(
@@ -40,7 +38,6 @@ let package = Package(
                 "Sockets",
                 .product(name: "IO", package: "swift-io"),
                 .product(name: "Kernel", package: "swift-kernel"),
-                .product(name: "Memory Primitives", package: "swift-memory-primitives"),
                 .product(name: "Span Raw Primitives", package: "swift-span-primitives"),
             ],
             path: "Tests/Sockets Tests"

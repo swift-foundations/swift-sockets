@@ -4,26 +4,28 @@
 //
 
 public import IO
-import Kernel
-import Memory_Primitives
-import Span_Raw_Primitives
+public import Kernel
+public import Span_Raw_Primitives
 
 extension Sockets.TCP {
 
     /// An accepted TCP connection.
     ///
-    /// Owns the accepted kernel descriptor and holds the `IO` it was produced
-    /// from. Byte-level read/write/close are delegated to the `IO` witness
-    /// over the stored ``Kernel/Descriptor`` — the socket-domain typing is
+    /// Owns the accepted kernel descriptor and holds the
+    /// `IO<Sockets.Capabilities>` it was produced from. Byte-level
+    /// read/write/close are delegated to the capability closures over
+    /// the stored ``Kernel/Descriptor`` — the socket-domain typing is
     /// consumed at the accept boundary (Path A — see
-    /// `swift-io/Research/io-phase-2-plan.md` §4.A.0).
+    /// `swift-io/Research/io-phase-2-plan.md` §4.A.0; on POSIX the
+    /// socket descriptor and the generic descriptor are the same
+    /// move-only type since the Cycle 21 unification).
     ///
     /// ## Ownership
     ///
     /// `Connection` is `~Copyable` — single ownership by construction. When
     /// the value is dropped without an explicit ``close()``, the stored
     /// ``Kernel/Descriptor``'s own deinit closes the underlying fd. ``close()``
-    /// is the explicit (typed) cleanup path.
+    /// is the explicit cleanup path.
     ///
     /// ## Sendability
     ///
@@ -42,12 +44,12 @@ extension Sockets.TCP {
         public let peer: Kernel.Socket.Address.Storage
 
         /// The `IO` this connection delegates byte-level I/O through.
-        public let io: IO
+        public let io: IO<Sockets.Capabilities>
 
         internal init(
             descriptor: consuming Kernel.Descriptor,
             peer: Kernel.Socket.Address.Storage,
-            io: IO
+            io: IO<Sockets.Capabilities>
         ) {
             self.descriptor = descriptor
             self.peer = peer
@@ -62,20 +64,20 @@ extension Sockets.TCP.Connection {
 
     /// Read up to `buffer.count` bytes into `buffer`. Returns bytes read (0 at EOF).
     ///
-    /// Dispatches to `io.read(from:into:)` with the stored descriptor borrowed
-    /// generically. Strategy-specific behavior (blocking syscall vs events
-    /// poll-then-read vs completions CQE wait) is supplied by the `IO` value
-    /// the connection was constructed with.
+    /// Dispatches to `io.read(from:into:)` with the stored descriptor borrowed.
+    /// Strategy-specific behavior (blocking syscall vs events poll-then-read
+    /// vs completions wait) is supplied by the `IO` value the connection was
+    /// constructed with.
     public borrowing func read(
         into buffer: Span.Raw.Mutable
-    ) async throws(IO.Error) -> Int {
+    ) async throws(Sockets.Error) -> Int {
         try await io.read(from: descriptor, into: buffer)
     }
 
     /// Write up to `buffer.count` bytes from `buffer`. Returns bytes written.
     public borrowing func write(
         from buffer: Span.Raw
-    ) async throws(IO.Error) -> Int {
+    ) async throws(Sockets.Error) -> Int {
         try await io.write(to: descriptor, from: buffer)
     }
 
@@ -121,7 +123,6 @@ extension Sockets.TCP.Connection {
         } catch {
             switch error {
             case .platform(let err): throw .platform(err.code)
-            case .handle, .io: throw .platform(Error_Primitives.Error.Code.current())
             }
         }
     }
