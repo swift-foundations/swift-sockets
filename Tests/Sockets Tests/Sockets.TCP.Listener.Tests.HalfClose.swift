@@ -19,7 +19,6 @@
 
 import Testing
 import Kernel
-import Memory_Primitives
 import IO
 import Sockets
 import Span_Raw_Primitives
@@ -35,7 +34,7 @@ extension Sockets.TCP.Listener.Tests.HalfClose {
           arguments: Sockets.TCP.Listener.Tests.Strategy.allCases)
     func halfCloseEcho(strategy: Sockets.TCP.Listener.Tests.Strategy) async throws {
         let (_, listener) = try await Sockets.TCP.Listener.Tests.Strategy.makeServer(strategy)
-        let clientIO = IO.blocking()
+        let clientIO = IO<Sockets.Capabilities>.blocking()
         let port = try await listener.port()
 
         let payload: [UInt8] = [0x48, 0x41, 0x4C, 0x46]  // "HALF"
@@ -74,7 +73,7 @@ extension Sockets.TCP.Listener.Tests.HalfClose {
                     socket,
                     address: Kernel.Socket.Address.IPv4.loopback(port: port)
                 )
-                let descriptor = Kernel.Descriptor(consume socket)
+                let descriptor = consume socket
 
                 // Write payload.
                 let wbuf = UnsafeMutableRawBufferPointer.allocate(byteCount: payload.count, alignment: 1)

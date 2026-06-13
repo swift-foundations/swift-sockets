@@ -3,14 +3,12 @@
 //  swift-sockets
 //
 //  Integration test: three concurrent clients echoed through one
-//  Sockets.TCP.Listener. Blocking-strategy only for Phase 3A — concurrent
-//  `io.ready` calls on the same fd under the events/completions strategies
-//  hit swift-io's single-suspended-receiver invariant on the per-fd
-//  readiness channel (Async_Channel_Primitives/Async.Channel.Unbounded.State.swift:186).
-//  That is a pre-existing swift-io limitation, not a Phase 3A regression.
-//  Parameterizing this suite across reactor-backed strategies is deferred
-//  until swift-io's events/completions actor supports fan-out readiness
-//  signalling (likely Phase 2E or Phase 3B).
+//  Sockets.TCP.Listener. Blocking-strategy only — the Phase 2A matrix
+//  has a single cell anyway; when the reactor-backed cells return in
+//  Phase 2B / 2C, re-evaluate parameterizing this suite (swift-io's
+//  Event.Actor moved to per-call channel dispatch, so the historical
+//  single-suspended-receiver limitation on concurrent `io.ready` calls
+//  for one fd no longer applies).
 //
 //  Documents the thread-per-listener serialization model — every accept
 //  and the subsequent read/write/close for each accepted connection run
@@ -30,7 +28,6 @@
 
 import Testing
 import Kernel
-import Memory_Primitives
 import IO
 import Sockets
 import Span_Raw_Primitives
@@ -44,8 +41,8 @@ extension Sockets.TCP.Listener.Tests.MultipleConnections {
 
     @Test
     func `three concurrent connections echoed correctly round-trip (blocking strategy)`() async throws {
-        let serverIO = IO.blocking()
-        let clientIO = IO.blocking()
+        let serverIO = IO<Sockets.Capabilities>.blocking()
+        let clientIO = IO<Sockets.Capabilities>.blocking()
         let listener = try Sockets.TCP.Listener.blocking(
             address: .loopback(port: 0),
             io: serverIO
@@ -128,7 +125,7 @@ private func serverSideEcho(listener: Sockets.TCP.Listener) async throws -> [UIn
 }
 
 private func clientSideRoundTrip(
-    io: IO,
+    io: IO<Sockets.Capabilities>,
     port: UInt16,
     payload: [UInt8]
 ) async throws -> [UInt8] {
@@ -137,7 +134,7 @@ private func clientSideRoundTrip(
         socket,
         address: Kernel.Socket.Address.IPv4.loopback(port: port)
     )
-    let descriptor = Kernel.Descriptor(consume socket)
+    let descriptor = consume socket
 
     let writePtr = UnsafeMutableRawBufferPointer.allocate(
         byteCount: payload.count,

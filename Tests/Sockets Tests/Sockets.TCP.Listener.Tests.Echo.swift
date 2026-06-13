@@ -3,10 +3,11 @@
 //  swift-sockets
 //
 //  Integration test: single TCP connection echoed round-trip through a
-//  Sockets.TCP.Listener. Parameterized over Phase 3A's IO strategy matrix
-//  (blocking / events / completions (Linux) / default). Each cell pairs
-//  the strategy-appropriate Listener factory (.blocking or .reactive) —
-//  see Sockets.TCP.Listener docs for the pairing contract.
+//  Sockets.TCP.Listener. Parameterized over the IO strategy matrix
+//  (blocking for Phase 2A; events / completions cells return in Phase
+//  2B / 2C). Each cell pairs the strategy-appropriate Listener factory
+//  (.blocking or .reactive) — see Sockets.TCP.Listener docs for the
+//  pairing contract.
 //
 //  Validates the TCA26 shared-executor composition end-to-end — the
 //  listener forwards its unownedExecutor to the IO's, and accept + read
@@ -16,7 +17,6 @@
 
 import Testing
 import Kernel
-import Memory_Primitives
 import IO
 import Sockets
 import Span_Raw_Primitives
@@ -32,7 +32,7 @@ extension Sockets.TCP.Listener.Tests.Echo {
           arguments: Sockets.TCP.Listener.Tests.Strategy.allCases)
     func singleConnection(strategy: Sockets.TCP.Listener.Tests.Strategy) async throws {
         let (_, listener) = try await Sockets.TCP.Listener.Tests.Strategy.makeServer(strategy)
-        let clientIO = IO.blocking()
+        let clientIO = IO<Sockets.Capabilities>.blocking()
         let port = try await listener.port()
 
         let payload: [UInt8] = [0xDE, 0xAD, 0xBE, 0xEF, 0xCA, 0xFE]
@@ -88,7 +88,7 @@ private func serverSideEcho(listener: Sockets.TCP.Listener) async throws -> [UIn
 // the payload, read back the echo, close. Returns the bytes received.
 
 private func clientSideRoundTrip(
-    io: IO,
+    io: IO<Sockets.Capabilities>,
     port: UInt16,
     payload: [UInt8]
 ) async throws -> [UInt8] {
@@ -97,7 +97,7 @@ private func clientSideRoundTrip(
         socket,
         address: Kernel.Socket.Address.IPv4.loopback(port: port)
     )
-    let descriptor = Kernel.Descriptor(consume socket)
+    let descriptor = consume socket
 
     let writePtr = UnsafeMutableRawBufferPointer.allocate(
         byteCount: payload.count,
