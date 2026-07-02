@@ -149,7 +149,7 @@ The current surface is the blocking strategy over IPv4 TCP: listener, accepted c
 ## Community
 
 <!-- BEGIN: discussion -->
-*Discussion thread will be created at first public flip.*
+*Discussion thread will be created at first public release.*
 <!-- END: discussion -->
 
 ---
