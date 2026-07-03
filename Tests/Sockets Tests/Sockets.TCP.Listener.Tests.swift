@@ -3,10 +3,10 @@
 //  swift-sockets
 //
 
-import Testing
-import Kernel
 import IO
+import Kernel
 import Sockets
+import Testing
 
 extension Sockets.TCP.Listener {
     /// Test-only namespace grouping integration tests for ``Sockets/TCP/Listener``.
@@ -45,7 +45,7 @@ extension Sockets.TCP.Listener.Tests {
 
         /// Construct a server `IO` + `Listener` pair for the strategy,
         /// bound to IPv4 loopback on a kernel-assigned ephemeral port.
-        static func makeServer(_ strategy: Strategy) async throws -> (IO<Sockets.Capabilities>, Sockets.TCP.Listener) {
+        static func makeServer(_ strategy: Self) async throws -> (IO<Sockets.Capabilities>, Sockets.TCP.Listener) {
             switch strategy {
             case .blocking:
                 let io = IO<Sockets.Capabilities>.blocking()

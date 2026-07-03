@@ -17,11 +17,11 @@
 //  closing the fd, allowing the other direction to continue.
 //
 
-import Testing
-import Kernel
 import IO
+import Kernel
 import Sockets
 import Span_Raw_Primitives
+import Testing
 
 extension Sockets.TCP.Listener.Tests {
     @Suite("Sockets.TCP.Listener — half-close")
@@ -30,8 +30,10 @@ extension Sockets.TCP.Listener.Tests {
 
 extension Sockets.TCP.Listener.Tests.HalfClose {
 
-    @Test("half-close echo: shutdown(.write) sends FIN, peer reads EOF per IO strategy",
-          arguments: Sockets.TCP.Listener.Tests.Strategy.allCases)
+    @Test(
+        "half-close echo: shutdown(.write) sends FIN, peer reads EOF per IO strategy",
+        arguments: Sockets.TCP.Listener.Tests.Strategy.allCases
+    )
     func halfCloseEcho(strategy: Sockets.TCP.Listener.Tests.Strategy) async throws {
         let (_, listener) = try await Sockets.TCP.Listener.Tests.Strategy.makeServer(strategy)
         let clientIO = IO<Sockets.Capabilities>.blocking()

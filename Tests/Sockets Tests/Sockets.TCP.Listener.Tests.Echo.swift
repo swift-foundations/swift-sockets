@@ -15,11 +15,11 @@
 //  isolation.
 //
 
-import Testing
-import Kernel
 import IO
+import Kernel
 import Sockets
 import Span_Raw_Primitives
+import Testing
 
 extension Sockets.TCP.Listener.Tests {
     @Suite("Sockets.TCP.Listener — single connection echo")
@@ -28,8 +28,10 @@ extension Sockets.TCP.Listener.Tests {
 
 extension Sockets.TCP.Listener.Tests.Echo {
 
-    @Test("single connection echoes payload round-trip per IO strategy",
-          arguments: Sockets.TCP.Listener.Tests.Strategy.allCases)
+    @Test(
+        "single connection echoes payload round-trip per IO strategy",
+        arguments: Sockets.TCP.Listener.Tests.Strategy.allCases
+    )
     func singleConnection(strategy: Sockets.TCP.Listener.Tests.Strategy) async throws {
         let (_, listener) = try await Sockets.TCP.Listener.Tests.Strategy.makeServer(strategy)
         let clientIO = IO<Sockets.Capabilities>.blocking()

@@ -61,7 +61,7 @@ extension Sockets.TCP {
 
         internal let _io: IO<Sockets.Capabilities>
 
-        public nonisolated var unownedExecutor: UnownedSerialExecutor {
+        nonisolated public var unownedExecutor: UnownedSerialExecutor {
             unsafe _io.unownedExecutor
         }
 

@@ -44,7 +44,7 @@ extension IO where Capabilities == Sockets.Capabilities {
     public func ready(
         from fd: borrowing Kernel.Descriptor,
         interest: Kernel.Event.Interest
-    ) async throws(Sockets.Error) -> Void {
+    ) async throws(Sockets.Error) {
         try await capabilities.ready(fd, interest)
     }
 

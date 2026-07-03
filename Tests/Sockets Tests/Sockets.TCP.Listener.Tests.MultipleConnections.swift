@@ -26,11 +26,11 @@
 //  listeners.
 //
 
-import Testing
-import Kernel
 import IO
+import Kernel
 import Sockets
 import Span_Raw_Primitives
+import Testing
 
 extension Sockets.TCP.Listener.Tests {
     @Suite("Sockets.TCP.Listener — multiple connections")
@@ -52,7 +52,7 @@ extension Sockets.TCP.Listener.Tests.MultipleConnections {
         let payloads: [[UInt8]] = [
             [0x11, 0x22, 0x33],
             [0xAA, 0xBB, 0xCC],
-            [0xF0, 0xE1, 0xD2]
+            [0xF0, 0xE1, 0xD2],
         ]
 
         // Three servers accepting (all serialize through serverIO's single
@@ -63,13 +63,19 @@ extension Sockets.TCP.Listener.Tests.MultipleConnections {
         async let server2: [UInt8] = serverSideEcho(listener: listener)
 
         async let client0: [UInt8] = clientSideRoundTrip(
-            io: clientIO, port: port, payload: payloads[0]
+            io: clientIO,
+            port: port,
+            payload: payloads[0]
         )
         async let client1: [UInt8] = clientSideRoundTrip(
-            io: clientIO, port: port, payload: payloads[1]
+            io: clientIO,
+            port: port,
+            payload: payloads[1]
         )
         async let client2: [UInt8] = clientSideRoundTrip(
-            io: clientIO, port: port, payload: payloads[2]
+            io: clientIO,
+            port: port,
+            payload: payloads[2]
         )
 
         let (s0, s1, s2) = try await (server0, server1, server2)
