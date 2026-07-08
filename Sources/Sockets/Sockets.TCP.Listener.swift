@@ -61,14 +61,19 @@ extension Sockets.TCP {
 
         internal let _io: IO<Sockets.Capabilities>
 
-        nonisolated public var unownedExecutor: UnownedSerialExecutor {
-            unsafe _io.unownedExecutor
-        }
-
         internal init(fd: consuming Kernel.Descriptor, io: IO<Sockets.Capabilities>) {
             self._fd = fd
             self._io = io
         }
+    }
+}
+
+// MARK: - Executor
+
+extension Sockets.TCP.Listener {
+
+    nonisolated public var unownedExecutor: UnownedSerialExecutor {
+        unsafe _io.unownedExecutor
     }
 }
 
