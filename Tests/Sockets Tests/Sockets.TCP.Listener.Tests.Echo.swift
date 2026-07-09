@@ -29,10 +29,9 @@ extension Sockets.TCP.Listener.Tests {
 extension Sockets.TCP.Listener.Tests.Echo {
 
     @Test(
-        "single connection echoes payload round-trip per IO strategy",
         arguments: Sockets.TCP.Listener.Tests.Strategy.allCases
     )
-    func singleConnection(strategy: Sockets.TCP.Listener.Tests.Strategy) async throws {
+    func `single connection echoes payload round-trip per IO strategy`(strategy: Sockets.TCP.Listener.Tests.Strategy) async throws {
         let (_, listener) = try await Sockets.TCP.Listener.Tests.Strategy.makeServer(strategy)
         let clientIO = IO<Sockets.Capabilities>.blocking()
         let port = try await listener.port()

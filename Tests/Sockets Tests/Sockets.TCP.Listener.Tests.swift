@@ -42,19 +42,21 @@ extension Sockets.TCP.Listener.Tests {
     /// isolate state between cells.
     enum Strategy: Sendable, CaseIterable {
         case blocking
+    }
+}
 
-        /// Construct a server `IO` + `Listener` pair for the strategy,
-        /// bound to IPv4 loopback on a kernel-assigned ephemeral port.
-        static func makeServer(_ strategy: Self) async throws -> (IO<Sockets.Capabilities>, Sockets.TCP.Listener) {
-            switch strategy {
-            case .blocking:
-                let io = IO<Sockets.Capabilities>.blocking()
-                let listener = try Sockets.TCP.Listener.blocking(
-                    address: .loopback(port: 0),
-                    io: io
-                )
-                return (io, listener)
-            }
+extension Sockets.TCP.Listener.Tests.Strategy {
+    /// Construct a server `IO` + `Listener` pair for the strategy,
+    /// bound to IPv4 loopback on a kernel-assigned ephemeral port.
+    static func makeServer(_ strategy: Self) async throws -> (IO<Sockets.Capabilities>, Sockets.TCP.Listener) {
+        switch strategy {
+        case .blocking:
+            let io = IO<Sockets.Capabilities>.blocking()
+            let listener = try Sockets.TCP.Listener.blocking(
+                address: .loopback(port: 0),
+                io: io
+            )
+            return (io, listener)
         }
     }
 }
