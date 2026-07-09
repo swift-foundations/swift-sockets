@@ -18,7 +18,7 @@ extension Sockets.TCP.Listener {
     /// parallel execution, a server `accept(2)` blocking its shard while
     /// a sibling test needs that same shard deadlocks the finite pool.
     /// Serializing removes the cross-test shard contention, and keeps the
-    /// ``BlockingIdleCPU`` process-CPU measurement free of sibling-test
+    /// `` `Blocking Idle CPU` `` process-CPU measurement free of sibling-test
     /// thread noise.
     @Suite(.serialized)
     enum Tests {}

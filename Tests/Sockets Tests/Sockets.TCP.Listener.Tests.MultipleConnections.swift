@@ -33,11 +33,11 @@ import Span_Raw_Primitives
 import Testing
 
 extension Sockets.TCP.Listener.Tests {
-    @Suite("Sockets.TCP.Listener — multiple connections")
-    struct MultipleConnections {}
+    @Suite
+    struct `Multiple Connections` {}
 }
 
-extension Sockets.TCP.Listener.Tests.MultipleConnections {
+extension Sockets.TCP.Listener.Tests.`Multiple Connections` {
 
     @Test
     func `three concurrent connections echoed correctly round-trip (blocking strategy)`() async throws {

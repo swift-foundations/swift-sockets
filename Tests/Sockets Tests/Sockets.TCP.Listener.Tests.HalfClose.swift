@@ -24,11 +24,11 @@ import Span_Raw_Primitives
 import Testing
 
 extension Sockets.TCP.Listener.Tests {
-    @Suite("Sockets.TCP.Listener — half-close")
-    struct HalfClose {}
+    @Suite
+    struct `Half Close` {}
 }
 
-extension Sockets.TCP.Listener.Tests.HalfClose {
+extension Sockets.TCP.Listener.Tests.`Half Close` {
 
     @Test(
         arguments: Sockets.TCP.Listener.Tests.Strategy.allCases

@@ -38,11 +38,11 @@
     import Sockets
 
     extension Sockets.TCP.Listener.Tests {
-        @Suite("Sockets.TCP.Listener — blocking-strategy no-hot-spin")
-        struct BlockingIdleCPU {}
+        @Suite
+        struct `Blocking Idle CPU` {}
     }
 
-    extension Sockets.TCP.Listener.Tests.BlockingIdleCPU {
+    extension Sockets.TCP.Listener.Tests.`Blocking Idle CPU` {
 
         @Test
         func `blocking listener sleeps in kernel during idle accept`() async throws {
