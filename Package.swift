@@ -20,6 +20,9 @@ let package = Package(
         .package(url: "https://github.com/swift-foundations/swift-threads.git", branch: "main"),
         .package(url: "https://github.com/swift-foundations/swift-executors.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-span-primitives.git", branch: "main"),
+        // Test-only: the reactive test-support IO factory pins a
+        // Kernel.Thread.Actor and drives readiness through POSIX poll(2).
+        .package(url: "https://github.com/swift-foundations/swift-posix.git", branch: "main"),
     ],
     targets: [
         .target(
@@ -39,6 +42,12 @@ let package = Package(
                 .product(name: "IO", package: "swift-io"),
                 .product(name: "Kernel", package: "swift-kernel"),
                 .product(name: "Span Raw Primitives", package: "swift-span-primitives"),
+                // Test-only: reactive-strategy IO factory (see
+                // Sockets.Tests.ReactiveIO.swift). Not consumed by the
+                // Sockets target.
+                .product(name: "Thread Actor", package: "swift-threads"),
+                .product(name: "Executors", package: "swift-executors"),
+                .product(name: "POSIX Kernel Poll", package: "swift-posix"),
             ],
             path: "Tests/Sockets Tests"
         ),

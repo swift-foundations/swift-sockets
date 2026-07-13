@@ -103,6 +103,20 @@ extension Sockets.TCP.Listener {
         return Sockets.TCP.Listener(fd: consume fd, io: io)
     }
 
+    /// Creates an IPv6 listener whose socket remains in blocking mode.
+    ///
+    /// The IPv6 companion of the IPv4 `blocking(address:io:backlog:)`
+    /// factory; the fd inherits the kernel's default blocking mode and the
+    /// same strategy pairing applies. Intended for `io: .blocking()`.
+    public static func blocking(
+        address: Kernel.Socket.Address.IPv6,
+        io: IO<Sockets.Capabilities>,
+        backlog: Kernel.Socket.Backlog = .max
+    ) throws(Sockets.Error) -> Sockets.TCP.Listener {
+        let fd = try createBindListen(address: address, backlog: backlog)
+        return Sockets.TCP.Listener(fd: consume fd, io: io)
+    }
+
     /// Creates a listener whose socket is set to non-blocking mode.
     ///
     /// The listening fd is switched to `O_NONBLOCK` at init time via
@@ -122,7 +136,30 @@ extension Sockets.TCP.Listener {
         backlog: Kernel.Socket.Backlog = .max
     ) throws(Sockets.Error) -> Sockets.TCP.Listener {
         let fd = try createBindListen(address: address, backlog: backlog)
+        try makeNonBlocking(fd)
+        return Sockets.TCP.Listener(fd: consume fd, io: io)
+    }
 
+    /// Creates an IPv6 listener whose socket is set to non-blocking mode.
+    ///
+    /// The IPv6 companion of the IPv4 `reactive(address:io:backlog:)`
+    /// factory; the fd is switched to `O_NONBLOCK` and the same accept-loop
+    /// / strategy pairing applies. Intended for the reactor- / proactor-backed
+    /// `IO<Sockets.Capabilities>` factories.
+    public static func reactive(
+        address: Kernel.Socket.Address.IPv6,
+        io: IO<Sockets.Capabilities>,
+        backlog: Kernel.Socket.Backlog = .max
+    ) throws(Sockets.Error) -> Sockets.TCP.Listener {
+        let fd = try createBindListen(address: address, backlog: backlog)
+        try makeNonBlocking(fd)
+        return Sockets.TCP.Listener(fd: consume fd, io: io)
+    }
+
+    /// Shared `O_NONBLOCK` switch used by the `.reactive` factories.
+    private static func makeNonBlocking(
+        _ fd: borrowing Kernel.Descriptor
+    ) throws(Sockets.Error) {
         do throws(Kernel.File.Control.Error) {
             try Kernel.File.Control.setNonBlocking(fd)
         } catch {
@@ -131,11 +168,9 @@ extension Sockets.TCP.Listener {
             case .handle(let err): throw .platform(err.code)
             }
         }
-
-        return Sockets.TCP.Listener(fd: consume fd, io: io)
     }
 
-    /// Shared create + bind + listen sequence. On throw, the
+    /// Shared create + bind + listen sequence (IPv4). On throw, the
     /// already-created descriptor's deinit closes the fd automatically.
     /// On success, ownership transfers to the returned value —
     /// `Kernel.Socket.Descriptor` and `Kernel.Descriptor` are the same
@@ -146,6 +181,23 @@ extension Sockets.TCP.Listener {
     ) throws(Sockets.Error) -> Kernel.Descriptor {
         do throws(Kernel.Socket.Error) {
             let socket = try Kernel.Socket.Create.create(domain: .inet, kind: .stream)
+            try Kernel.Socket.Bind.bind(socket, address: address)
+            try Kernel.Socket.Listen.listen(socket, backlog: backlog)
+            return socket
+        } catch {
+            throw .platform(error.code)
+        }
+    }
+
+    /// Shared create + bind + listen sequence (IPv6). The IPv6 companion
+    /// of the IPv4 `createBindListen` — same discipline, `.inet6` domain
+    /// and the IPv6 `bind` overload.
+    private static func createBindListen(
+        address: Kernel.Socket.Address.IPv6,
+        backlog: Kernel.Socket.Backlog
+    ) throws(Sockets.Error) -> Kernel.Descriptor {
+        do throws(Kernel.Socket.Error) {
+            let socket = try Kernel.Socket.Create.create(domain: .inet6, kind: .stream)
             try Kernel.Socket.Bind.bind(socket, address: address)
             try Kernel.Socket.Listen.listen(socket, backlog: backlog)
             return socket
@@ -212,15 +264,16 @@ extension Sockets.TCP.Listener {
 
 extension Sockets.TCP.Listener {
 
-    /// The IPv4 port this listener is bound to.
+    /// The port this listener is bound to.
     ///
     /// Queries `getsockname(2)` on the listening descriptor. Useful after
     /// binding with `.loopback(port: 0)` or `.any(port: 0)` to recover the
     /// kernel-assigned ephemeral port for a client to connect to.
     ///
-    /// Preconditions that the listener is bound to an IPv4 address; 2A
-    /// ships IPv4 TCP only. Subsequent sub-phases will add IPv6 and Unix
-    /// variants with their own address accessors.
+    /// Valid for IPv4 and IPv6 listeners — both carry the port at the same
+    /// offset in their `sockaddr` layout (see ``Kernel/Socket/Address/Storage``'s
+    /// port reader). Preconditions any other family (a Unix-domain address
+    /// has no port).
     public func port() throws(Sockets.Error) -> UInt16 {
         let storage: Kernel.Socket.Address.Storage
         do throws(Kernel.Socket.Error) {
@@ -228,14 +281,6 @@ extension Sockets.TCP.Listener {
         } catch {
             throw .platform(error.code)
         }
-        precondition(
-            storage.family == .inet,
-            "Sockets.TCP.Listener.port() is only valid for IPv4 listeners; got \(storage.family)."
-        )
-        // sockaddr_in layout: sa_family_t (2 bytes) | sin_port (2 bytes, big-endian).
-        return unsafe storage.withUnsafeBytes { raw, _ in
-            let networkPort = unsafe raw.load(fromByteOffset: 2, as: UInt16.self)
-            return UInt16(bigEndian: networkPort)
-        }
+        return storage._port
     }
 }

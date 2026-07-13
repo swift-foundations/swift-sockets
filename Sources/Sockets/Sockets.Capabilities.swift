@@ -9,7 +9,7 @@ public import Span_Raw_Primitives
 extension Sockets {
     /// Socket byte-ops capability surface for ``Kernel/Descriptor``.
     ///
-    /// Four `@Sendable` closures describing the operations a strategy
+    /// Seven `@Sendable` closures describing the operations a strategy
     /// must provide for the sockets domain. Each per-(domain × strategy)
     /// factory constructs a value of this struct and pairs it with an
     /// ``IO/Runner`` via ``IO``'s initializer — see swift-io-primitives'
@@ -18,18 +18,20 @@ extension Sockets {
     ///
     /// The sockets domain owns this struct (rather than reusing a
     /// swift-io capability set) because capability sets are domain
-    /// vocabulary: operations throw ``Sockets/Error``, and Phase 2B / 2C
-    /// extend the surface with socket-native operations (accept,
-    /// connect) that map directly onto proactor submissions — see
-    /// swift-io's manifest note on the Test-Support-quarantined Basic
-    /// domain.
+    /// vocabulary: operations throw ``Sockets/Error``. Alongside the
+    /// stream byte-ops (``read`` / ``write`` / ``close``) and the
+    /// readiness primitive (``ready``), the surface carries the
+    /// socket-native ``connect`` and the connectionless datagram
+    /// ``send`` / ``receive`` — `accept` stays composed at the call site
+    /// via ``ready`` (see ``Sockets/TCP/Listener``), matching swift-io's
+    /// manifest note on the Test-Support-quarantined Basic domain.
     ///
     /// ## Buffer Ownership
     ///
     /// The ``Span/Raw`` / ``Span/Raw/Mutable`` parameters passed to
-    /// `read` / `write` are **non-owning views**. The caller guarantees
-    /// the referred memory remains at a stable address for the duration
-    /// of the enclosing `try await` expression.
+    /// `read` / `write` / `send` / `receive` are **non-owning views**.
+    /// The caller guarantees the referred memory remains at a stable
+    /// address for the duration of the enclosing `try await` expression.
     public struct Capabilities: Sendable {
 
         /// Read bytes from a descriptor into a mutable buffer. Returns
@@ -75,7 +77,58 @@ extension Sockets {
                 Kernel.Event.Interest
             ) async throws(Sockets.Error) -> Void
 
-        /// Creates a capability set from its four operation closures.
+        /// Connect a descriptor to a peer address.
+        ///
+        /// Socket-native operation. The strategy owns the blocking
+        /// discipline: the blocking strategy performs an EINTR-safe
+        /// blocking `connect(2)`; a reactor-backed strategy switches the
+        /// descriptor to non-blocking, initiates the connect, and awaits
+        /// write-readiness before checking `SO_ERROR` (see
+        /// ``Sockets/TCP/Connection/connect(to:io:)`` for the pairing).
+        ///
+        /// The address is passed as an opaque
+        /// ``Kernel/Socket/Address/Storage`` plus its actual
+        /// ``Kernel/Socket/Address/Length`` so the surface stays
+        /// address-family-agnostic; the caller converts an `IPv4` / `IPv6`
+        /// address to `Storage` at the factory boundary.
+        public let connect:
+            @Sendable (
+                borrowing Kernel.Descriptor,
+                Kernel.Socket.Address.Storage,
+                Kernel.Socket.Address.Length
+            ) async throws(Sockets.Error) -> Void
+
+        /// Send a datagram to a specific address. Returns bytes sent.
+        ///
+        /// The connectionless send-to primitive (`sendto(2)`) for the UDP
+        /// surface. The destination is an opaque
+        /// ``Kernel/Socket/Address/Storage`` plus its
+        /// ``Kernel/Socket/Address/Length`` — family-agnostic, mirroring
+        /// ``connect``.
+        public let send:
+            @Sendable (
+                borrowing Kernel.Descriptor,
+                Span.Raw,
+                Kernel.Socket.Address.Storage,
+                Kernel.Socket.Address.Length
+            ) async throws(Sockets.Error) -> Int
+
+        /// Receive a datagram, reporting the sender.
+        ///
+        /// The connectionless receive-from primitive (`recvfrom(2)`) for
+        /// the UDP surface. Returns the byte count alongside the sender's
+        /// opaque ``Kernel/Socket/Address/Storage`` and its length.
+        public let receive:
+            @Sendable (
+                borrowing Kernel.Descriptor,
+                Span.Raw.Mutable
+            ) async throws(Sockets.Error) -> (
+                count: Int,
+                peer: Kernel.Socket.Address.Storage,
+                length: Kernel.Socket.Address.Length
+            )
+
+        /// Creates a capability set from its operation closures.
         public init(
             read:
                 @Sendable @escaping (
@@ -92,12 +145,37 @@ extension Sockets {
                 @Sendable @escaping (
                     borrowing Kernel.Descriptor,
                     Kernel.Event.Interest
-                ) async throws(Sockets.Error) -> Void
+                ) async throws(Sockets.Error) -> Void,
+            connect:
+                @Sendable @escaping (
+                    borrowing Kernel.Descriptor,
+                    Kernel.Socket.Address.Storage,
+                    Kernel.Socket.Address.Length
+                ) async throws(Sockets.Error) -> Void,
+            send:
+                @Sendable @escaping (
+                    borrowing Kernel.Descriptor,
+                    Span.Raw,
+                    Kernel.Socket.Address.Storage,
+                    Kernel.Socket.Address.Length
+                ) async throws(Sockets.Error) -> Int,
+            receive:
+                @Sendable @escaping (
+                    borrowing Kernel.Descriptor,
+                    Span.Raw.Mutable
+                ) async throws(Sockets.Error) -> (
+                    count: Int,
+                    peer: Kernel.Socket.Address.Storage,
+                    length: Kernel.Socket.Address.Length
+                )
         ) {
             self.read = read
             self.write = write
             self.close = close
             self.ready = ready
+            self.connect = connect
+            self.send = send
+            self.receive = receive
         }
     }
 }

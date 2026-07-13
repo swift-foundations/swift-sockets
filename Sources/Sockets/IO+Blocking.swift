@@ -60,6 +60,15 @@ extension IO where Capabilities == Sockets.Capabilities {
                 // subsequent syscall is the actual block. Ready-then-
                 // syscall composes correctly across strategies with this
                 // no-op.
+            },
+            connect: { fd, address, length throws(Sockets.Error) in
+                try await actor.connect(fd, to: address, length: length)
+            },
+            send: { fd, buffer, address, length throws(Sockets.Error) -> Int in
+                try await actor.send(on: fd, from: buffer, to: address, length: length)
+            },
+            receive: { fd, buffer throws(Sockets.Error) in
+                try await actor.receive(on: fd, into: buffer)
             }
         )
         let runner = unsafe Self.Runner(

@@ -49,7 +49,7 @@
             let serverIO = IO<Sockets.Capabilities>.blocking()
             let clientIO = IO<Sockets.Capabilities>.blocking()
             let listener = try Sockets.TCP.Listener.blocking(
-                address: .loopback(port: 0),
+                address: Kernel.Socket.Address.IPv4.loopback(port: 0),
                 io: serverIO
             )
             let port = try await listener.port()

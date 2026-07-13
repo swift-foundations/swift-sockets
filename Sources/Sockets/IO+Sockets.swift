@@ -48,6 +48,38 @@ extension IO where Capabilities == Sockets.Capabilities {
         try await capabilities.ready(fd, interest)
     }
 
+    /// Connect `fd` to the peer `address` (of `length` bytes).
+    @inlinable
+    public func connect(
+        _ fd: borrowing Kernel.Descriptor,
+        to address: Kernel.Socket.Address.Storage,
+        length: Kernel.Socket.Address.Length
+    ) async throws(Sockets.Error) {
+        try await capabilities.connect(fd, address, length)
+    }
+
+    /// Send a datagram from `buffer` on `fd` to `address`. Returns bytes
+    /// sent.
+    @inlinable
+    public func send(
+        on fd: borrowing Kernel.Descriptor,
+        from buffer: Span.Raw,
+        to address: Kernel.Socket.Address.Storage,
+        length: Kernel.Socket.Address.Length
+    ) async throws(Sockets.Error) -> Int {
+        try await capabilities.send(fd, buffer, address, length)
+    }
+
+    /// Receive a datagram on `fd` into `buffer`. Returns bytes received
+    /// alongside the sender's address and length.
+    @inlinable
+    public func receive(
+        on fd: borrowing Kernel.Descriptor,
+        into buffer: Span.Raw.Mutable
+    ) async throws(Sockets.Error) -> (count: Int, peer: Kernel.Socket.Address.Storage, length: Kernel.Socket.Address.Length) {
+        try await capabilities.receive(fd, buffer)
+    }
+
     /// The `UnownedSerialExecutor` this IO is pinned to.
     ///
     /// Forward from a consumer actor's `unownedExecutor` for TCA26

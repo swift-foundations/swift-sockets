@@ -3,12 +3,11 @@
 //  swift-sockets
 //
 //  Integration test: three concurrent clients echoed through one
-//  Sockets.TCP.Listener. Blocking-strategy only — the Phase 2A matrix
-//  has a single cell anyway; when the reactor-backed cells return in
-//  Phase 2B / 2C, re-evaluate parameterizing this suite (swift-io's
-//  Event.Actor moved to per-call channel dispatch, so the historical
-//  single-suspended-receiver limitation on concurrent `io.ready` calls
-//  for one fd no longer applies).
+//  Sockets.TCP.Listener. Parameterized over the IO strategy matrix. The
+//  test-support reactive strategy serializes the three concurrent
+//  `listener.accept()` calls on the listener's pinned actor thread — each
+//  accept polls then accepts, so the historical single-suspended-receiver
+//  limitation on a real reactor's per-fd channel does not apply here.
 //
 //  Documents the thread-per-listener serialization model — every accept
 //  and the subsequent read/write/close for each accepted connection run
@@ -39,14 +38,12 @@ extension Sockets.TCP.Listener.Tests {
 
 extension Sockets.TCP.Listener.Tests.`Multiple Connections` {
 
-    @Test
-    func `three concurrent connections echoed correctly round-trip (blocking strategy)`() async throws {
-        let serverIO = IO<Sockets.Capabilities>.blocking()
+    @Test(
+        arguments: Sockets.TCP.Listener.Tests.Strategy.allCases
+    )
+    func `three concurrent connections echoed correctly round-trip per IO strategy`(strategy: Sockets.TCP.Listener.Tests.Strategy) async throws {
+        let (_, listener) = try await Sockets.TCP.Listener.Tests.Strategy.makeServer(strategy)
         let clientIO = IO<Sockets.Capabilities>.blocking()
-        let listener = try Sockets.TCP.Listener.blocking(
-            address: .loopback(port: 0),
-            io: serverIO
-        )
         let port = try await listener.port()
 
         let payloads: [[UInt8]] = [

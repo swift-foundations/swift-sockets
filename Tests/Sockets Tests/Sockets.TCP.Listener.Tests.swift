@@ -30,33 +30,55 @@ extension Sockets.TCP.Listener.Tests {
     /// The `IO<Sockets.Capabilities>` strategies exercised by the
     /// parameterized integration tests.
     ///
-    /// Phase 2A ships the blocking strategy only, so the matrix holds a
-    /// single cell. The events / completions cells (and the
-    /// host-adaptive default) return in Phase 2B / 2C when swift-sockets
-    /// wires its capability set to swift-io's reactor / proactor actors
-    /// — re-add the cases here and `makeServer` picks up the pairing
-    /// (`.blocking` listener factory for the blocking strategy;
-    /// `.reactive` for reactor-backed strategies).
+    /// - `.blocking` — the shipped blocking factory (`IO.blocking()` +
+    ///   `.blocking` listener factory): fds stay in kernel blocking mode
+    ///   and `ready` is a no-op.
+    /// - `.reactive` — the test-support reactive factory (`makeReactiveIO()`
+    ///   + `.reactive` listener factory): fds are `O_NONBLOCK` and `ready`
+    ///   is a blocking `poll(2)`. This cell exists only to exercise the
+    ///   reactive code paths (accept loop, connect sequence, EAGAIN-retry
+    ///   read/write); the real reactor / proactor factories are swift-io's
+    ///   territory (Phase 2B / 2C).
     ///
     /// Fresh strategy resources are created per test invocation to
     /// isolate state between cells.
     enum Strategy: Sendable, CaseIterable {
         case blocking
+        case reactive
     }
 }
 
 extension Sockets.TCP.Listener.Tests.Strategy {
+    /// Construct an `IO<Sockets.Capabilities>` for the strategy.
+    ///
+    /// Used for both the server-side listener pairing (``makeServer(_:)``)
+    /// and the client-side ``Sockets/TCP/Connection/connect(to:io:)`` path.
+    func makeIO() -> IO<Sockets.Capabilities> {
+        switch self {
+        case .blocking: return .blocking()
+        case .reactive: return makeReactiveIO()
+        }
+    }
+
     /// Construct a server `IO` + `Listener` pair for the strategy,
-    /// bound to IPv4 loopback on a kernel-assigned ephemeral port.
+    /// bound to IPv4 loopback on a kernel-assigned ephemeral port. Each
+    /// cell pairs the strategy-appropriate listener factory (`.blocking`
+    /// for the blocking strategy, `.reactive` for the reactive one).
     static func makeServer(_ strategy: Self) async throws -> (IO<Sockets.Capabilities>, Sockets.TCP.Listener) {
+        let io = strategy.makeIO()
+        let listener: Sockets.TCP.Listener
         switch strategy {
         case .blocking:
-            let io = IO<Sockets.Capabilities>.blocking()
-            let listener = try Sockets.TCP.Listener.blocking(
-                address: .loopback(port: 0),
+            listener = try Sockets.TCP.Listener.blocking(
+                address: Kernel.Socket.Address.IPv4.loopback(port: 0),
                 io: io
             )
-            return (io, listener)
+        case .reactive:
+            listener = try Sockets.TCP.Listener.reactive(
+                address: Kernel.Socket.Address.IPv4.loopback(port: 0),
+                io: io
+            )
         }
+        return (io, listener)
     }
 }

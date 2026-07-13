@@ -31,6 +31,17 @@ extension Sockets.Error {
         self.init(code: error.code)
     }
 
+    /// Maps a kernel socket-op error onto the sockets domain.
+    ///
+    /// The disposition matches the byte-op mappings above: `ECONNRESET`
+    /// surfaces as ``Sockets/Error/connectionReset``, and every other
+    /// code folds into ``Sockets/Error/platform(_:)``. Used by the
+    /// `connect` / `send` / `receive` capability bindings on
+    /// ``Kernel/Thread/Actor`` and by the reactive connect sequence.
+    internal init(_ error: Kernel.Socket.Error) {
+        self.init(code: error.code)
+    }
+
     /// Shared platform-code disposition for the kernel byte-op errors.
     private init(code: Error_Primitives.Error.Code) {
         if Error_Primitives.Error.Code.POSIX.isECONNRESET(code) {
