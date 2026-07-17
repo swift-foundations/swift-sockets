@@ -22,8 +22,8 @@ import Span_Raw_Primitives
 import Testing
 
 extension Sockets.TCP.Listener.Tests {
-    @Suite("Sockets.TCP.Listener — single connection echo")
-    struct Echo {}
+    @Suite
+    struct `Sockets.TCP.Listener — single connection echo` {}
 }
 
 extension Sockets.TCP.Listener.Tests.Echo {

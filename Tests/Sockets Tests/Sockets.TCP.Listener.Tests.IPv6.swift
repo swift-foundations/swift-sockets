@@ -19,8 +19,8 @@ import Span_Raw_Primitives
 import Testing
 
 extension Sockets.TCP.Listener.Tests {
-    @Suite("Sockets.TCP.Listener — IPv6 echo")
-    struct IPv6 {}
+    @Suite
+    struct `Sockets.TCP.Listener — IPv6 echo` {}
 }
 
 extension Sockets.TCP.Listener.Tests.IPv6 {
