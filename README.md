@@ -107,6 +107,16 @@ actor Server {
 
 Two listener factories make the fd-mode-to-strategy pairing explicit: `blocking(address:io:backlog:)` keeps the fd in kernel blocking mode (pair with `.blocking()`), and `reactive(address:io:backlog:)` sets `O_NONBLOCK` for readiness-based strategies. The compiler cannot verify the pairing — match factory to strategy at the call site.
 
+**Head-of-line hazard.** Sharing one `IO` across a listener and its accepted connections shares one dedicated OS thread (under the blocking strategy) or one event loop (under a readiness-based strategy). An idle `accept(2)`/`read(2)`/`write(2)` on any fd sharing that `IO` blocks every other fd and actor job scheduled on it — including the listener's own accept loop. `accept()` homes an accepted connection on the listener's own `IO` by default, so this hazard is live out of the box. Use `accept(io:)` to home an accepted connection on a *different* `IO`:
+
+```swift
+// Canonical pattern: listener on its own IO; each connection on a
+// separate IO so a slow peer cannot starve the listener or its siblings.
+let connection = try await listener.accept(io: .blocking())
+```
+
+This is a local API workaround for Phase 2A's blocking strategy; swift-io's readiness-based strategies (Phase 2B/2C) resolve the hazard structurally.
+
 ---
 
 ## Error Handling

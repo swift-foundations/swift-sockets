@@ -38,6 +38,27 @@ extension Sockets.TCP {
     /// `accept(2)` blocking on a spurious wakeup. Match factory to
     /// strategy at the call site.
     ///
+    /// ## Head-of-line hazard
+    ///
+    /// The accept loop (``accept()`` / ``accept(io:)``) waits on `_io`,
+    /// the `IO` this listener was constructed with — an idle or slow
+    /// `accept(2)` occupies that `IO`'s dedicated OS thread for as long
+    /// as it waits. ``accept()`` also *homes* the returned
+    /// ``Sockets/TCP/Connection`` on that same `_io`, so by default every
+    /// connection this listener accepts shares one thread with the
+    /// accept loop itself and with every other connection accepted the
+    /// same way — one slow peer or one blocked read/write starves the
+    /// listener and every sibling connection's fd.
+    ///
+    /// Use ``accept(io:)`` to home an accepted connection's byte-level
+    /// I/O on a *different* `IO` than the listener's own. The canonical
+    /// pattern: listener on its own dedicated `IO`; each accepted
+    /// connection (or a small pool of connections) on separate `IO`(s).
+    /// This is a local, structural workaround for Phase 2A's blocking
+    /// strategy — swift-io's readiness-based strategies (Phase 2B/2C)
+    /// resolve the hazard at the root by not dedicating a whole thread
+    /// per accept/read/write in the first place.
+    ///
     /// ## Lifecycle
     ///
     /// The listener owns its listening descriptor for the actor's
@@ -226,7 +247,38 @@ extension Sockets.TCP.Listener {
     ///
     /// POSIX wrapper policy: `POSIX.Kernel.Socket.Accept.accept` retries
     /// on EINTR automatically.
+    ///
+    /// Homes the returned connection's byte-level I/O on this listener's
+    /// own `IO` — see the type-level "Head-of-line hazard" note. Use
+    /// ``accept(io:)`` to home the connection on a different `IO`.
     public func accept() async throws(Sockets.Error) -> Sockets.TCP.Connection {
+        try await accept(io: _io)
+    }
+
+    /// Accepts a single incoming connection, homing the returned
+    /// connection's byte-level I/O on `io` rather than on this
+    /// listener's own `IO`.
+    ///
+    /// The accept loop itself still waits via this listener's own `_io`
+    /// (`_io.ready(from:interest:)`) — only the *returned connection's*
+    /// subsequent `read`/`write`/`close` delegate through the supplied
+    /// `io`. This is the escape hatch for the head-of-line hazard
+    /// documented on ``Sockets/TCP/Listener``: pass an `io` distinct
+    /// from the listener's own so a slow or idle connection cannot
+    /// starve the listener's accept loop, and so sibling connections
+    /// accepted onto their own `io`(s) cannot starve each other.
+    ///
+    /// ```swift
+    /// let listener = try Sockets.TCP.Listener.blocking(
+    ///     address: .loopback(port: 0),
+    ///     io: listenerIO
+    /// )
+    /// // Each accepted connection gets its own IO — and thus its own
+    /// // dedicated thread under the blocking strategy — rather than
+    /// // sharing the listener's.
+    /// let connection = try await listener.accept(io: .blocking())
+    /// ```
+    public func accept(io: IO<Sockets.Capabilities>) async throws(Sockets.Error) -> Sockets.TCP.Connection {
         while true {
             try await _io.ready(from: _fd, interest: .read)
 
@@ -242,7 +294,7 @@ extension Sockets.TCP.Listener {
                 return Sockets.TCP.Connection(
                     descriptor: consume result.descriptor,
                     peer: peer,
-                    io: _io
+                    io: io
                 )
             } catch {
                 // EAGAIN and EWOULDBLOCK share a value on both Darwin (35)

@@ -32,6 +32,19 @@ extension Sockets.TCP {
     /// `Sendable` — all stored properties are `Sendable`. Ownership transfer
     /// across isolation boundaries moves the Connection; the `~Copyable`
     /// rule prevents accidental sharing.
+    ///
+    /// ## Head-of-line hazard
+    ///
+    /// A connection's byte-level `read`/`write`/`close` all delegate
+    /// through the ``io`` it was constructed with. If that `io` is
+    /// shared with a `Sockets.TCP.Listener`'s own accept loop (the
+    /// default under ``Sockets/TCP/Listener/accept()``) or with other
+    /// connections, an idle or slow `read(2)`/`write(2)` on this
+    /// connection occupies that `io`'s dedicated thread (blocking
+    /// strategy) or event loop (readiness-based strategy) — starving
+    /// every other fd and actor job scheduled on it. Construct or accept
+    /// this connection on an `io` distinct from the listener's own
+    /// (see ``Sockets/TCP/Listener/accept(io:)``) to isolate that risk.
     public struct Connection: ~Copyable, Sendable {
 
         /// The accepted kernel descriptor.
