@@ -21,7 +21,18 @@
 //  and confirm the marker fires when that wrapped `IO` is passed to
 //  `accept(io:)`.
 //
+//  IO isolation: this test deliberately uses `blocking(on:)` with
+//  executors it OWNS (and shuts down) rather than the no-argument
+//  `.blocking()` factory. `.blocking()` pins a shard of the
+//  process-scoped shared executor pool per call and advances its
+//  round-robin cursor — a process-global side effect that shifts every
+//  later test's shard assignment and can rotate two must-run-
+//  concurrently actors of a later suite onto the same shard (the
+//  shard-collision deadlock documented in this target's suite header).
+//  Owned executors keep this test's footprint zero.
+//
 
+import Executors
 import IO
 import Kernel
 import Sockets
@@ -37,10 +48,20 @@ extension Sockets.TCP.Listener.Tests.`Accept On Different IO` {
 
     @Test
     func `accept(io:) homes the accepted connection's byte-level IO on the supplied IO rather than the listener's own IO`() async throws {
+        // Owned executors — no shared-pool pins (see file header).
+        let listenerExecutor = Kernel.Thread.Executor(mode: .serial)
+        let acceptExecutor = Kernel.Thread.Executor(mode: .serial)
+        let clientExecutor = Kernel.Thread.Executor(mode: .serial)
+        defer {
+            listenerExecutor.shutdown()
+            acceptExecutor.shutdown()
+            clientExecutor.shutdown()
+        }
+
         // Listener's own IO — the accept-loop thread. The marker is never
         // installed here, so if the marker fires, it can only be because
         // the connection actually read through acceptIO's capabilities.
-        let listenerIO = IO<Sockets.Capabilities>.blocking()
+        let listenerIO = IO<Sockets.Capabilities>.blocking(on: listenerExecutor)
         let listener = try Sockets.TCP.Listener.blocking(
             address: Kernel.Socket.Address.IPv4.loopback(port: 0),
             io: listenerIO
@@ -48,7 +69,7 @@ extension Sockets.TCP.Listener.Tests.`Accept On Different IO` {
         let port = try await listener.port()
 
         let marker = ReadMarker()
-        let acceptIO = markedIO(wrapping: .blocking(), marker: marker)
+        let acceptIO = markedIO(wrapping: .blocking(on: acceptExecutor), marker: marker)
 
         let payload: [UInt8] = [0x41, 0x42, 0x43, 0x44]
 
@@ -74,7 +95,7 @@ extension Sockets.TCP.Listener.Tests.`Accept On Different IO` {
                     address: Kernel.Socket.Address.IPv4.loopback(port: port)
                 )
                 let descriptor = consume socket
-                let clientIO = IO<Sockets.Capabilities>.blocking()
+                let clientIO = IO<Sockets.Capabilities>.blocking(on: clientExecutor)
 
                 let writeBuffer = UnsafeMutableRawBufferPointer.allocate(byteCount: payload.count, alignment: 1)
                 defer { unsafe writeBuffer.deallocate() }
