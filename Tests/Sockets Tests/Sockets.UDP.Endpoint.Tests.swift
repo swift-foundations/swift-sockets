@@ -38,8 +38,8 @@ extension Sockets.UDP.Endpoint {
 }
 
 extension Sockets.UDP.Endpoint.Tests {
-    @Suite("Sockets.UDP.Endpoint — datagram round-trip")
-    struct RoundTrip {}
+    @Suite
+    struct `Sockets.UDP.Endpoint — datagram round-trip` {}
 }
 
 extension Sockets.UDP.Endpoint.Tests.RoundTrip {
