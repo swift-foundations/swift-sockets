@@ -23,7 +23,7 @@ extension Sockets.TCP.Listener.Tests {
     struct `Sockets.TCP.Listener — IPv6 echo` {}
 }
 
-extension Sockets.TCP.Listener.Tests.IPv6 {
+extension Sockets.TCP.Listener.Tests.`Sockets.TCP.Listener — IPv6 echo` {
 
     @Test(
         arguments: Sockets.TCP.Listener.Tests.Strategy.allCases

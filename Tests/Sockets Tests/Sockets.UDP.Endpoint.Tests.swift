@@ -42,7 +42,7 @@ extension Sockets.UDP.Endpoint.Tests {
     struct `Sockets.UDP.Endpoint — datagram round-trip` {}
 }
 
-extension Sockets.UDP.Endpoint.Tests.RoundTrip {
+extension Sockets.UDP.Endpoint.Tests.`Sockets.UDP.Endpoint — datagram round-trip` {
 
     @Test
     func `IPv4 datagram round-trips client to server and back to peer`() async throws {

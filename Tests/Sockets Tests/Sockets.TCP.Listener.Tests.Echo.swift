@@ -26,7 +26,7 @@ extension Sockets.TCP.Listener.Tests {
     struct `Sockets.TCP.Listener — single connection echo` {}
 }
 
-extension Sockets.TCP.Listener.Tests.Echo {
+extension Sockets.TCP.Listener.Tests.`Sockets.TCP.Listener — single connection echo` {
 
     @Test(
         arguments: Sockets.TCP.Listener.Tests.Strategy.allCases
