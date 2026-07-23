@@ -69,14 +69,16 @@ extension Sockets.UDP.Endpoint {
     /// `address`. Bind with `.loopback(port: 0)` or `.any(port: 0)` and
     /// recover the kernel-assigned port via ``port()``.
     ///
-    /// The datagram socket stays in the kernel's default blocking mode;
-    /// datagram I/O is intended for `io: .blocking()`, where
-    /// `recvfrom(2)` sleeps in the kernel until a datagram arrives.
+    /// Before exposure, the factory invokes `io.prepare` once. With
+    /// `.blocking()` the descriptor stays in the kernel's default blocking
+    /// mode; with `.events()` it becomes non-blocking and readiness gates
+    /// datagram I/O.
     public static func bound(
         to address: Kernel.Socket.Address.IPv4,
         io: IO<Sockets.Capabilities>
     ) throws(Sockets.Error) -> Sockets.UDP.Endpoint {
         let fd = try createBind(address: address)
+        try io.prepare(fd)
         return Sockets.UDP.Endpoint(descriptor: consume fd, io: io)
     }
 
@@ -89,6 +91,7 @@ extension Sockets.UDP.Endpoint {
         io: IO<Sockets.Capabilities>
     ) throws(Sockets.Error) -> Sockets.UDP.Endpoint {
         let fd = try createBind(address: address)
+        try io.prepare(fd)
         return Sockets.UDP.Endpoint(descriptor: consume fd, io: io)
     }
 

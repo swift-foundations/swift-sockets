@@ -37,6 +37,16 @@ private let _reactiveTestExecutors: Kernel.Thread.Executor.Sharded = .init()
 func makeReactiveIO() -> IO<Sockets.Capabilities> {
     let actor = Kernel.Thread.Actor(executor: _reactiveTestExecutors.next())
     let capabilities = Sockets.Capabilities(
+        prepare: { fd throws(Sockets.Error) in
+            do throws(Kernel.File.Control.Error) {
+                try Kernel.File.Control.setNonBlocking(fd)
+            } catch {
+                switch error {
+                case .platform(let value): throw .platform(value.code)
+                case .handle(let value): throw .platform(value.code)
+                }
+            }
+        },
         read: { fd, buffer throws(Sockets.Error) -> Int in
             try await actor.testReactiveRead(from: fd, into: buffer)
         },

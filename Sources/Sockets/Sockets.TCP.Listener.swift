@@ -19,24 +19,23 @@ extension Sockets.TCP {
     ///
     /// ## Strategy pairing
     ///
-    /// The fd's blocking mode must match the `IO` strategy's `ready`
-    /// semantics (see ``Sockets/Capabilities/ready``). Two factories
-    /// make the choice explicit:
+    /// The `IO` strategy establishes the fd's blocking mode through its
+    /// one-shot `prepare` capability before the listener is exposed. The
+    /// two retained factories document the intended pairing:
     ///
-    /// - ``blocking(address:io:backlog:)`` — fd stays in kernel blocking
+    /// - ``blocking(address:io:backlog:)`` with `.blocking()` — fd stays in kernel blocking
     ///   mode. `accept(2)` sleeps in the kernel until a connection
     ///   arrives. Intended for `io: .blocking()`.
-    /// - ``reactive(address:io:backlog:)`` — fd is set to `O_NONBLOCK`.
+    /// - ``reactive(address:io:backlog:)`` with `.events()` — `io.prepare`
+    ///   sets the fd to `O_NONBLOCK`.
     ///   `accept(2)` returns `EAGAIN` when the queue is empty; the
     ///   accept loop awaits `io.ready(from: _fd, interest: .read)`
-    ///   before retrying. Intended for the reactor- / proactor-backed
-    ///   factories arriving in Phase 2B / 2C.
+    ///   before retrying. Intended for the event-backed reactor factory;
+    ///   the same preparation seam can serve a future proactor factory.
     ///
-    /// The compiler cannot verify the `io`-to-factory pairing. Mixing
-    /// `.reactive` with a blocking-strategy `io` produces a hot-spin
-    /// accept loop; mixing `.blocking` with a reactor-backed `io` risks
-    /// `accept(2)` blocking on a spurious wakeup. Match factory to
-    /// strategy at the call site.
+    /// The factory name does not independently mutate flags: both factories
+    /// delegate configuration to the supplied `io`. Match the documented
+    /// name and strategy at the call site.
     ///
     /// ## Head-of-line hazard
     ///
@@ -102,93 +101,78 @@ extension Sockets.TCP.Listener {
 
 extension Sockets.TCP.Listener {
 
-    /// Creates a listener whose socket remains in blocking mode.
+    /// Creates a listener using the supplied IO strategy's preparation.
     ///
-    /// The listening fd inherits the kernel's default blocking mode —
-    /// `accept(2)` sleeps inside the kernel until a connection arrives.
-    /// Intended for `io: .blocking()`, where `io.ready(...)` is a no-op
+    /// Intended for `io: .blocking()`, whose `prepare` hook is a no-op and
+    /// therefore leaves the new fd in its kernel-default blocking mode.
+    /// `accept(2)` sleeps inside the kernel until a connection arrives;
+    /// `io.ready(...)` is a no-op
     /// and the subsequent `accept(2)` is the actual wait point (see
     /// ``Sockets/Capabilities/ready``).
     ///
-    /// Passing a reactor-backed `IO` is permitted but semantically off —
-    /// `io.ready(...)` will wait on kernel readiness, but the subsequent
-    /// `accept(2)` on a blocking fd may re-block on a spurious wakeup
-    /// (rare; possible under RST-before-accept and similar edge cases).
-    /// Use ``reactive(address:io:backlog:)`` for reactor-backed strategies.
+    /// Passing an events-backed IO makes the fd non-blocking because the IO,
+    /// not this factory name, owns preparation. Prefer
+    /// ``reactive(address:io:backlog:)`` to make that pairing explicit.
     public static func blocking(
         address: Kernel.Socket.Address.IPv4,
         io: IO<Sockets.Capabilities>,
         backlog: Kernel.Socket.Backlog = .max
     ) throws(Sockets.Error) -> Sockets.TCP.Listener {
         let fd = try createBindListen(address: address, backlog: backlog)
+        try io.prepare(fd)
         return Sockets.TCP.Listener(fd: consume fd, io: io)
     }
 
-    /// Creates an IPv6 listener whose socket remains in blocking mode.
+    /// Creates an IPv6 listener using the supplied IO strategy's preparation.
     ///
     /// The IPv6 companion of the IPv4 `blocking(address:io:backlog:)`
-    /// factory; the fd inherits the kernel's default blocking mode and the
-    /// same strategy pairing applies. Intended for `io: .blocking()`.
+    /// factory; the same strategy pairing applies. Intended for
+    /// `io: .blocking()`.
     public static func blocking(
         address: Kernel.Socket.Address.IPv6,
         io: IO<Sockets.Capabilities>,
         backlog: Kernel.Socket.Backlog = .max
     ) throws(Sockets.Error) -> Sockets.TCP.Listener {
         let fd = try createBindListen(address: address, backlog: backlog)
+        try io.prepare(fd)
         return Sockets.TCP.Listener(fd: consume fd, io: io)
     }
 
-    /// Creates a listener whose socket is set to non-blocking mode.
+    /// Creates a listener paired with a reactive IO strategy.
     ///
-    /// The listening fd is switched to `O_NONBLOCK` at init time via
-    /// `fcntl(F_SETFL)`. `accept(2)` returns `EAGAIN` immediately on an
+    /// The supplied IO's `prepare` hook establishes its resource invariant.
+    /// With `.events()`, this sets `O_NONBLOCK` while preserving other status
+    /// flags. `accept(2)` returns `EAGAIN` immediately on an
     /// empty queue, and ``accept()`` awaits `io.ready(from: _fd,
     /// interest: .read)` before retrying. Intended for the reactor- /
-    /// proactor-backed `IO<Sockets.Capabilities>` factories arriving in
-    /// Phase 2B / 2C.
+    /// events-backed `IO<Sockets.Capabilities>` factory.
     ///
-    /// Passing a blocking-strategy `io` causes a hot-spin: `io.ready(...)`
-    /// is a no-op under the blocking strategy, so the retry loop burns
-    /// CPU until a connection arrives. Use ``blocking(address:io:backlog:)``
-    /// with `.blocking()`.
+    /// Passing `.blocking()` leaves the descriptor blocking, so the accept
+    /// syscall remains the wait point. Prefer
+    /// ``blocking(address:io:backlog:)`` to make that pairing explicit.
     public static func reactive(
         address: Kernel.Socket.Address.IPv4,
         io: IO<Sockets.Capabilities>,
         backlog: Kernel.Socket.Backlog = .max
     ) throws(Sockets.Error) -> Sockets.TCP.Listener {
         let fd = try createBindListen(address: address, backlog: backlog)
-        try makeNonBlocking(fd)
+        try io.prepare(fd)
         return Sockets.TCP.Listener(fd: consume fd, io: io)
     }
 
-    /// Creates an IPv6 listener whose socket is set to non-blocking mode.
+    /// Creates an IPv6 listener paired with a reactive IO strategy.
     ///
     /// The IPv6 companion of the IPv4 `reactive(address:io:backlog:)`
-    /// factory; the fd is switched to `O_NONBLOCK` and the same accept-loop
-    /// / strategy pairing applies. Intended for the reactor- / proactor-backed
-    /// `IO<Sockets.Capabilities>` factories.
+    /// factory; the supplied IO performs preparation and the same accept-loop
+    /// pairing applies. Intended for `.events()`.
     public static func reactive(
         address: Kernel.Socket.Address.IPv6,
         io: IO<Sockets.Capabilities>,
         backlog: Kernel.Socket.Backlog = .max
     ) throws(Sockets.Error) -> Sockets.TCP.Listener {
         let fd = try createBindListen(address: address, backlog: backlog)
-        try makeNonBlocking(fd)
+        try io.prepare(fd)
         return Sockets.TCP.Listener(fd: consume fd, io: io)
-    }
-
-    /// Shared `O_NONBLOCK` switch used by the `.reactive` factories.
-    private static func makeNonBlocking(
-        _ fd: borrowing Kernel.Descriptor
-    ) throws(Sockets.Error) {
-        do throws(Kernel.File.Control.Error) {
-            try Kernel.File.Control.setNonBlocking(fd)
-        } catch {
-            switch error {
-            case .platform(let err): throw .platform(err.code)
-            case .handle(let err): throw .platform(err.code)
-            }
-        }
     }
 
     /// Shared create + bind + listen sequence (IPv4). On throw, the
@@ -282,20 +266,9 @@ extension Sockets.TCP.Listener {
         while true {
             try await _io.ready(from: _fd, interest: .read)
 
+            let result: ISO_9945.Kernel.Socket.Accept.Result
             do throws(Kernel.Socket.Error) {
-                // `result`'s type is inferred from the accept return
-                // (`ISO_9945.Kernel.Socket.Accept.Result`): naming it
-                // explicitly is not possible here because the
-                // cross-platform `Kernel.Socket.Accept` resolves to the
-                // POSIX EINTR-policy enum, which owns the `accept` method
-                // but not the `Result` type (that lives in the L2 spec).
-                let result = try POSIX.Kernel.Socket.Accept.accept(_fd)
-                let peer = result.address
-                return Sockets.TCP.Connection(
-                    descriptor: consume result.descriptor,
-                    peer: peer,
-                    io: io
-                )
+                result = try POSIX.Kernel.Socket.Accept.accept(_fd)
             } catch {
                 // EAGAIN and EWOULDBLOCK share a value on both Darwin (35)
                 // and Linux (11); one check covers both. Under .blocking
@@ -308,6 +281,14 @@ extension Sockets.TCP.Listener {
                 }
                 throw .platform(error.code)
             }
+
+            try io.prepare(result.descriptor)
+            let peer = result.address
+            return Sockets.TCP.Connection(
+                descriptor: consume result.descriptor,
+                peer: peer,
+                io: io
+            )
         }
     }
 }

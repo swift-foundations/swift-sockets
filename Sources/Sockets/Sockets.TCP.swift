@@ -13,7 +13,7 @@ extension Sockets {
     /// `IO<Sockets.Capabilities>`'s executor thread, and byte-level I/O
     /// flows through the capability closures.
     ///
-    /// Phase 2A ships the blocking-strategy implementation. Events- and
-    /// completions-strategy code paths are added in Phase 2B / 2C.
+    /// Blocking and event-backed strategies are available. A completions /
+    /// proactor strategy remains future work.
     public enum TCP {}
 }

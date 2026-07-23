@@ -128,6 +128,7 @@ private actor ReadMarker {
 /// delegates through, since `IO` carries no equatable identity.
 private func markedIO(wrapping inner: IO<Sockets.Capabilities>, marker: ReadMarker) -> IO<Sockets.Capabilities> {
     let capabilities = Sockets.Capabilities(
+        prepare: inner.capabilities.prepare,
         read: { fd, buffer throws(Sockets.Error) -> Int in
             await marker.hit()
             return try await inner.capabilities.read(fd, buffer)

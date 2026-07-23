@@ -4,8 +4,8 @@
 //
 //  Cross-layer mapping from the kernel byte-op error types onto
 //  Sockets.Error. Used by the blocking strategy's capability closures;
-//  the events / completions factories (Phase 2B / 2C) add their own
-//  strategy-failure mappings alongside.
+//  the event factory's strategy-failure mapping lives in
+//  Sockets.Error+Event.swift; a future completions factory adds its own.
 //
 
 internal import Kernel
@@ -42,8 +42,19 @@ extension Sockets.Error {
         self.init(code: error.code)
     }
 
+    /// Maps a descriptor-control failure produced by the strategy prepare
+    /// hook onto the sockets domain.
+    internal init(_ error: Kernel.File.Control.Error) {
+        switch error {
+        case .handle(let error):
+            self = .descriptor(error)
+        case .platform(let error):
+            self.init(code: error.code)
+        }
+    }
+
     /// Shared platform-code disposition for the kernel byte-op errors.
-    private init(code: Error_Primitives.Error.Code) {
+    internal init(code: Error_Primitives.Error.Code) {
         if Error_Primitives.Error.Code.POSIX.isECONNRESET(code) {
             self = .connectionReset
         } else {

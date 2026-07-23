@@ -9,26 +9,19 @@
 //  Wall-clock alone cannot distinguish "thread sleeping in kernel" from
 //  "thread hot-spinning on EAGAIN" — both take the same wall time between
 //  `listener.accept()` call and client connect. The distinguishing metric
-//  is process CPU time (CLOCK_PROCESS_CPUTIME_ID) accumulated during the
-//  idle window.
+//  is calling-thread CPU time (CLOCK_THREAD_CPUTIME_ID) accumulated across
+//  the actual accept(2) call.
 //
 //  This test guards against a silent regression: if the .blocking factory
 //  ever starts setting O_NONBLOCK on the fd (or if the EAGAIN-retry loop
 //  fires under the blocking strategy), the CPU delta during the idle
-//  window explodes to ~= wall-clock delta. The threshold on a 50ms window
-//  is heuristic — comfortable above baseline test-scaffolding noise and
-//  well below hot-spin signature. Tighten if 3C benchmarks surface a
-//  tighter idle budget.
+//  window explodes to approximately the wall-clock delta. The 10ms
+//  threshold remains well below the hot-spin signature while excluding
+//  work performed by unrelated test-runner threads.
 //
 
-// WHY macOS-only: CLOCK_PROCESS_CPUTIME_ID measures all threads in the
-// process. In Docker after a cold build, swift-testing runner threads
-// inflate the baseline (~100 ms) past the hot-spin delta (~50 ms),
-// making the assertion unreliable. The code path through
-// Listener.accept() → io.ready → accept(2) is platform-identical;
-// if macOS catches a hot-spin regression, Linux has the same path.
-// The Echo parameterized test proves blocking-strategy correctness
-// (round-trip, no hang) on Linux independently.
+// WHY macOS-only: the typed Kernel.Thread.ID surface used to prove both
+// samples came from the listener executor thread is currently Darwin-owned.
 
 #if os(macOS)
 
@@ -46,15 +39,18 @@
 
         @Test
         func `blocking listener sleeps in kernel during idle accept`() async throws {
-            let serverIO = IO<Sockets.Capabilities>.blocking()
+            let measurement = Measurement()
+            let baseServerIO = IO<Sockets.Capabilities>.blocking()
+            let listenerIO = measurement.wrap.listener(wrapping: baseServerIO)
+            let acceptedIO = measurement.wrap.accepted(wrapping: baseServerIO)
             let clientIO = IO<Sockets.Capabilities>.blocking()
             let listener = try Sockets.TCP.Listener.blocking(
                 address: Kernel.Socket.Address.IPv4.loopback(port: 0),
-                io: serverIO
+                io: listenerIO
             )
             let port = try await listener.port()
 
-            // Structured concurrency: three concurrent tasks inside one group.
+            // Structured concurrency: two concurrent tasks inside one group.
             //
             // 1. Server task: calls listener.accept() and closes the connection.
             //    With a blocking fd + blocking strategy, accept(2) sleeps in
@@ -67,18 +63,12 @@
             //    during which the server should be sleeping in kernel, not
             //    spinning.
             //
-            // 3. Measurement task: measures process CPU delta across the
-            //    first 50 ms of the idle window. If the blocking path is
-            //    correct, no thread in the process is consuming CPU
-            //    (server sleeps in kernel, client sleeps in Task.sleep,
-            //    test runner itself is sleeping too).
-            //
             // Using withThrowingDiscardingTaskGroup avoids the "copy of
             // noncopyable typed value" compiler bug that `async let` with
             // a ~Copyable return type currently hits (Swift 6.3).
             try await withThrowingDiscardingTaskGroup { group in
                 group.addTask {
-                    let connection = try await listener.accept()
+                    let connection = try await listener.accept(io: acceptedIO)
                     await connection.close()
                 }
                 group.addTask {
@@ -91,24 +81,21 @@
                     let descriptor = consume socket
                     await clientIO.close(consume descriptor)
                 }
-                group.addTask {
-                    let cpuBefore = Clock.CPU.Process.now()
-                    try? await Task.sleep(for: .milliseconds(50))
-                    let cpuAfter = Clock.CPU.Process.now()
-
-                    let cpuDelta = cpuAfter - cpuBefore
-                    // Threshold is heuristic — 20% of window. Concurrent
-                    // threads from sibling test cells add ~1-2 ms baseline
-                    // process CPU noise; 10 ms absorbs that while remaining
-                    // 5x below a hot-spin signature (~50 ms from one
-                    // spinning thread). Tighten if 3C benchmarks surface a
-                    // tighter blocking-strategy idle budget.
-                    #expect(
-                        cpuDelta < .milliseconds(10),
-                        "blocking listener must not hot-spin while waiting for a connection; \(cpuDelta) CPU in 50 ms window"
-                    )
-                }
             }
+
+            let samples = measurement.snapshot()
+            let before = try #require(samples.before)
+            let after = try #require(samples.after)
+            #expect(
+                before.thread == after.thread,
+                "CPU samples must bracket accept(2) on one listener executor thread"
+            )
+
+            let cpuDelta = after.instant - before.instant
+            #expect(
+                cpuDelta < .milliseconds(10),
+                "blocking listener must not hot-spin while waiting for a connection; \(cpuDelta) CPU on the listener thread"
+            )
         }
     }
 

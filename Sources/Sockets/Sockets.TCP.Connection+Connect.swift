@@ -26,11 +26,11 @@ extension Sockets.TCP.Connection {
     /// The `io` determines how the connect blocks — the compiler cannot
     /// verify the pairing, exactly as for ``Sockets/TCP/Listener``:
     ///
-    /// - `io: .blocking()` — the descriptor stays in blocking mode and
+    /// - `io: .blocking()` — `io.prepare` leaves the descriptor in blocking mode and
     ///   `connect(2)` sleeps in the kernel until the handshake completes
     ///   (EINTR-safe via the POSIX completion policy).
-    /// - A reactor-backed `io` — the connect capability switches the
-    ///   descriptor to `O_NONBLOCK`, initiates the connect, and awaits
+    /// - An events-backed `io` — `io.prepare` establishes `O_NONBLOCK`
+    ///   before exposure; the connect capability initiates the connect and awaits
     ///   write-readiness before checking `SO_ERROR`
     ///   (``connectReactively(_:to:length:ready:)``).
     ///
@@ -45,6 +45,7 @@ extension Sockets.TCP.Connection {
         } catch {
             throw Sockets.Error(error)
         }
+        try io.prepare(socket)
         try await io.connect(socket, to: address.storage, length: Kernel.Socket.Address.IPv4.size)
         return Sockets.TCP.Connection(descriptor: consume socket, peer: address.storage, io: io)
     }
@@ -64,6 +65,7 @@ extension Sockets.TCP.Connection {
         } catch {
             throw Sockets.Error(error)
         }
+        try io.prepare(socket)
         try await io.connect(socket, to: address.storage, length: Kernel.Socket.Address.IPv6.size)
         return Sockets.TCP.Connection(descriptor: consume socket, peer: address.storage, io: io)
     }
@@ -76,13 +78,13 @@ extension Sockets.TCP.Connection {
     /// Non-blocking connect sequence, parameterized by a readiness primitive.
     ///
     /// The reactor-path counterpart of the blocking `connect` binding on
-    /// ``Kernel/Thread/Actor``. It switches the descriptor to `O_NONBLOCK`,
-    /// initiates the connect, and — when the handshake is still in progress
+    /// ``Kernel/Thread/Actor``. The resource factory has already prepared
+    /// the descriptor as non-blocking. This helper initiates the connect
+    /// and — when the handshake is still in progress
     /// — awaits write-readiness through the injected `ready` closure before
     /// reading `SO_ERROR` to determine the outcome. Because readiness is a
     /// parameter, a future reactor- / proactor-backed factory reuses this
-    /// sequence unchanged, supplying its own kernel-readiness primitive in
-    /// place of the test-support poll.
+    /// sequence unchanged, supplying its own kernel-readiness primitive.
     ///
     /// `package` rather than `public`: it is the wiring seam for
     /// strategy factories (including the tests' reactive factory), not part
@@ -93,17 +95,10 @@ extension Sockets.TCP.Connection {
         length: Kernel.Socket.Address.Length,
         ready: (borrowing Kernel.Descriptor, Kernel.Event.Interest) async throws(Sockets.Error) -> Void
     ) async throws(Sockets.Error) {
-        // 1. Switch to non-blocking so connect(2) returns immediately.
-        do throws(Kernel.File.Control.Error) {
-            try Kernel.File.Control.setNonBlocking(descriptor)
-        } catch {
-            switch error {
-            case .platform(let err): throw .platform(err.code)
-            case .handle(let err): throw .platform(err.code)
-            }
-        }
+        // The resource factory has already called its IO strategy's one-shot
+        // prepare hook, so this descriptor is non-blocking.
 
-        // 2. Initiate the connect. On a non-blocking socket this either
+        // 1. Initiate the connect. On a non-blocking socket this either
         //    completes immediately (typical on loopback) or reports the
         //    attempt is in progress (EINPROGRESS) / was interrupted (EINTR).
         //    Any other error is a hard failure surfaced to the caller.
@@ -112,17 +107,17 @@ extension Sockets.TCP.Connection {
             return
         } catch {
             let code = error.code
-            guard code.isInterrupted || Self.isInProgress(code) else {
+            guard code.isInterrupted || code.isInProgress else {
                 throw Sockets.Error(error)
             }
         }
 
-        // 3. Await write-readiness via the injected primitive (a poll under
+        // 2. Await write-readiness via the injected primitive (a poll under
         //    the test-support reactor; a kernel readiness event under a
         //    real one).
         try await ready(descriptor, .write)
 
-        // 4. Read the pending socket error: SO_ERROR == 0 means connected,
+        // 3. Read the pending socket error: SO_ERROR == 0 means connected,
         //    anything else is the connect failure (ECONNREFUSED, etc.).
         let pending: Error_Primitives.Error.Code
         do throws(Kernel.Socket.Error) {
@@ -135,14 +130,4 @@ extension Sockets.TCP.Connection {
         }
     }
 
-    /// `EINPROGRESS` test — the "connect in progress" sentinel is absent
-    /// from the shared error vocabulary and its value differs by platform
-    /// (Darwin 36, Linux / Musl 115).
-    private static func isInProgress(_ code: Error_Primitives.Error.Code) -> Bool {
-        #if canImport(Darwin)
-            return code == .posix(36)
-        #else
-            return code == .posix(115)
-        #endif
-    }
 }

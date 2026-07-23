@@ -9,7 +9,7 @@ public import Span_Raw_Primitives
 extension Sockets {
     /// Socket byte-ops capability surface for ``Kernel/Descriptor``.
     ///
-    /// Seven `@Sendable` closures describing the operations a strategy
+    /// Eight `@Sendable` closures describing the operations a strategy
     /// must provide for the sockets domain. Each per-(domain × strategy)
     /// factory constructs a value of this struct and pairs it with an
     /// ``IO/Runner`` via ``IO``'s initializer — see swift-io-primitives'
@@ -33,6 +33,14 @@ extension Sockets {
     /// The caller guarantees the referred memory remains at a stable
     /// address for the duration of the enclosing `try await` expression.
     public struct Capabilities: Sendable {
+
+        /// Configure a newly acquired descriptor for this strategy.
+        ///
+        /// Resource factories call this exactly once before exposing the
+        /// descriptor. Repeated calls are harmless. The blocking strategy is
+        /// a no-op; the events strategy establishes `O_NONBLOCK` while
+        /// preserving every other descriptor status flag.
+        public let prepare: @Sendable (borrowing Kernel.Descriptor) throws(Sockets.Error) -> Void
 
         /// Read bytes from a descriptor into a mutable buffer. Returns
         /// bytes read, or 0 at EOF.
@@ -130,6 +138,10 @@ extension Sockets {
 
         /// Creates a capability set from its operation closures.
         public init(
+            prepare:
+                @Sendable @escaping (
+                    borrowing Kernel.Descriptor
+                ) throws(Sockets.Error) -> Void,
             read:
                 @Sendable @escaping (
                     borrowing Kernel.Descriptor,
@@ -169,6 +181,7 @@ extension Sockets {
                     length: Kernel.Socket.Address.Length
                 )
         ) {
+            self.prepare = prepare
             self.read = read
             self.write = write
             self.close = close

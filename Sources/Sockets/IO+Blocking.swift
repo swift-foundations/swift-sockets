@@ -9,8 +9,8 @@
 //  dedicated OS thread — `Task.sleep`, `@MainActor` hops, and
 //  unstructured tasks all preserve the binding.
 //
-//  Phase 2A ships this factory only; the events / completions
-//  factories follow in Phase 2B / 2C (see Sockets.TCP).
+//  Phase 2A introduced this factory. The event-backed factory is also
+//  available; the completions / proactor factory remains future work.
 //
 
 public import Executors
@@ -46,6 +46,7 @@ extension IO where Capabilities == Sockets.Capabilities {
     public static func blocking(on executor: Kernel.Thread.Executor) -> IO<Sockets.Capabilities> {
         let actor = Kernel.Thread.Actor(executor: executor)
         let capabilities = Sockets.Capabilities(
+            prepare: { _ throws(Sockets.Error) in },
             read: { fd, buffer throws(Sockets.Error) -> Int in
                 try await actor.read(from: fd, into: buffer)
             },

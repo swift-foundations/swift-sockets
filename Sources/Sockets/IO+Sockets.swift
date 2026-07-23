@@ -14,6 +14,18 @@ public import Span_Raw_Primitives
 
 extension IO where Capabilities == Sockets.Capabilities {
 
+    /// Configure a newly acquired descriptor for this I/O strategy.
+    ///
+    /// Resource factories invoke this once before exposing their resource.
+    /// Low-level users constructing resources directly must do the same.
+    /// Repeated calls are harmless.
+    @inlinable
+    public func prepare(
+        _ fd: borrowing Kernel.Descriptor
+    ) throws(Sockets.Error) {
+        try capabilities.prepare(fd)
+    }
+
     /// Read bytes from `fd` into `buffer`. Returns bytes read, or 0 at
     /// EOF.
     @inlinable
