@@ -119,6 +119,9 @@ extension Sockets.TCP.Listener.Tests.`Accept On Different IO` {
 /// Actor-isolated flag recording whether the wrapped `read` capability fired.
 private actor ReadMarker {
     private(set) var wasHit = false
+}
+
+extension ReadMarker {
     func hit() { wasHit = true }
 }
 
