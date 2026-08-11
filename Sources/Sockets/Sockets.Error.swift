@@ -19,7 +19,7 @@ extension Sockets {
     /// `Sockets.Error+Event.swift`, and a future completions strategy can
     /// add its corresponding mapping. These mappings produce ``cancelled``
     /// and ``ioShutdown``.
-    public enum Error: Swift.Error, Equatable {
+    public enum Error: Swift.Error, Equatable, Sendable {
         /// Descriptor validity failure reported by the typed kernel owner.
         case descriptor(Kernel.Descriptor.Validity.Error)
 
