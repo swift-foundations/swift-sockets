@@ -19,7 +19,10 @@ extension Sockets.Error {
     /// (swift-io's Basic domain explicitly delegates this case to the
     /// socket layer). Other codes fold into ``Sockets/Error/platform(_:)``.
     internal init(_ error: Kernel.IO.Read.Error) {
-        self.init(code: error.code)
+        switch error {
+        case .blocking(.wouldBlock): self = .wouldBlock
+        default: self.init(code: error.code)
+        }
     }
 
     /// Maps a kernel write error onto the sockets domain.
@@ -28,7 +31,10 @@ extension Sockets.Error {
     /// codes — including `EPIPE`, which is fd-generic rather than
     /// socket-specific — fold into ``Sockets/Error/platform(_:)``.
     internal init(_ error: Kernel.IO.Write.Error) {
-        self.init(code: error.code)
+        switch error {
+        case .blocking(.wouldBlock): self = .wouldBlock
+        default: self.init(code: error.code)
+        }
     }
 
     /// Maps a kernel socket-op error onto the sockets domain.
@@ -39,7 +45,11 @@ extension Sockets.Error {
     /// `connect` / `send` / `receive` capability bindings on
     /// ``Kernel/Thread/Actor`` and by the reactive connect sequence.
     internal init(_ error: Kernel.Socket.Error) {
-        self.init(code: error.code)
+        if Error_Primitives.Error.Code.POSIX.isEAGAIN(error.code) {
+            self = .wouldBlock
+        } else {
+            self.init(code: error.code)
+        }
     }
 
     /// Maps a descriptor-control failure produced by the strategy prepare

@@ -1,0 +1,7 @@
+import IO
+import Kernel
+import Sockets
+
+// Expected compile failure: the listener lifecycle deliberately has no
+// blocking factory because blocking accept has no portable cancellation law.
+let _: IO<Sockets.TCP.Listener.Capabilities> = .blocking()

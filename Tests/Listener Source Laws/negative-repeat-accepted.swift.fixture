@@ -1,0 +1,9 @@
+import Sockets
+
+// Expected compile failure: Accepted is move-only and has one terminal owner.
+func repeatAccepted(_ accepted: consuming Sockets.TCP.Accepted) {
+    let first = consume accepted
+    let second = consume accepted
+    _ = consume first
+    _ = consume second
+}
