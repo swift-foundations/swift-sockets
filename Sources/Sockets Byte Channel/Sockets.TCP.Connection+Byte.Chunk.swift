@@ -24,7 +24,7 @@ extension Sockets.TCP.Connection {
 
     /// Writes every byte from `chunk`, retrying partial non-blocking attempts.
     /// No borrowed view crosses an asynchronous suspension point.
-    public consuming func write(
+    public borrowing func write(
         _ chunk: consuming Byte.Chunk
     ) async throws(Sockets.Error) {
         if chunk.count == .zero { return }
