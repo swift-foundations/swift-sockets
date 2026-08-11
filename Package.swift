@@ -13,20 +13,22 @@ let package = Package(
     ],
     products: [
         .library(name: "Sockets", targets: ["Sockets"]),
+        .library(name: "Sockets Byte Channel", targets: ["Sockets Byte Channel"]),
     ],
     dependencies: [
-        // TX-N2 composes the published IO byte-channel vocabulary at the
-        // approved producer revision. Package.resolved remains generated state
-        // and is deliberately not rewritten by this source-only transaction.
+        .package(url: "https://github.com/swift-foundations/swift-io.git", branch: "main"),
         .package(
-            url: "https://github.com/swift-foundations/swift-io.git",
-            revision: "a81f0e5cbdf8b35c7e66374f284af8b1c5a9eaa3"
+            url: "https://github.com/swift-foundations/swift-byte-channel.git",
+            revision: "f56b4393496fd52fffd1f27bfffca3b101a992d2"
         ),
         .package(url: "https://github.com/swift-foundations/swift-kernel.git", branch: "main"),
+        .package(
+            url: "https://github.com/swift-iso/swift-iso-9945.git",
+            revision: "00ab4956fd6e8e20798684150e990bab39d27e08"
+        ),
         .package(url: "https://github.com/swift-foundations/swift-threads.git", branch: "main"),
         .package(url: "https://github.com/swift-foundations/swift-executors.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-span-primitives.git", branch: "main"),
-        .package(url: "https://github.com/swift-primitives/swift-buffer-primitives.git", branch: "main"),
         .package(url: "https://github.com/swift-primitives/swift-byte-primitives.git", branch: "main"),
         // Test-only: the reactive test-support IO factory pins a
         // Kernel.Thread.Actor and drives readiness through POSIX poll(2).
@@ -41,15 +43,21 @@ let package = Package(
                 .product(name: "Thread Actor", package: "swift-threads"),
                 .product(name: "Executors", package: "swift-executors"),
                 .product(name: "Span Raw Primitives", package: "swift-span-primitives"),
-                .product(name: "Buffer Primitives", package: "swift-buffer-primitives"),
                 .product(name: "Byte Primitives", package: "swift-byte-primitives"),
+                .product(name: "ISO 9945 Kernel File", package: "swift-iso-9945"),
+            ]
+        ),
+        .target(
+            name: "Sockets Byte Channel",
+            dependencies: [
+                "Sockets",
+                .product(name: "Byte Chunk", package: "swift-byte-channel"),
             ]
         ),
         .testTarget(
             name: "Sockets Tests",
             dependencies: [
                 "Sockets",
-                .product(name: "IO", package: "swift-io"),
                 .product(name: "Kernel", package: "swift-kernel"),
                 .product(name: "Span Raw Primitives", package: "swift-span-primitives"),
                 // Test-only: reactive-strategy IO factory (see
@@ -60,6 +68,11 @@ let package = Package(
                 .product(name: "POSIX Kernel Poll", package: "swift-posix"),
             ],
             path: "Tests/Sockets Tests"
+        ),
+        .testTarget(
+            name: "Sockets Byte Channel Tests",
+            dependencies: ["Sockets Byte Channel"],
+            path: "Tests/Sockets Byte Channel Tests"
         ),
     ],
     swiftLanguageModes: [.v6]

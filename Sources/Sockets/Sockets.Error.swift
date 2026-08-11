@@ -30,6 +30,9 @@ extension Sockets {
         /// Operation attempted on a socket direction already closed.
         case closed(Direction)
 
+        /// A non-blocking descriptor could not make progress yet.
+        case wouldBlock
+
         /// Peer reset the connection (ECONNRESET). TCP-specific.
         case connectionReset
 

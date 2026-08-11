@@ -9,6 +9,7 @@
 //
 
 internal import Kernel
+internal import ISO_9945_Kernel_File
 
 extension Sockets.Error {
 
@@ -29,6 +30,22 @@ extension Sockets.Error {
     /// socket-specific — fold into ``Sockets/Error/platform(_:)``.
     internal init(_ error: Kernel.IO.Write.Error) {
         self.init(code: error.code)
+    }
+
+    /// Maps an exact ISO 9945 file-read attempt without leaking its error.
+    internal init(_ error: ISO_9945.Kernel.IO.Read.Error) {
+        switch error {
+        case .blocking(.wouldBlock): self = .wouldBlock
+        default: self.init(code: error.code)
+        }
+    }
+
+    /// Maps an exact ISO 9945 file-write attempt without leaking its error.
+    internal init(_ error: ISO_9945.Kernel.IO.Write.Error) {
+        switch error {
+        case .blocking(.wouldBlock): self = .wouldBlock
+        default: self.init(code: error.code)
+        }
     }
 
     /// Maps a kernel socket-op error onto the sockets domain.

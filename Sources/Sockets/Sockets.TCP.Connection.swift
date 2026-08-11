@@ -6,6 +6,7 @@
 public import IO
 public import Kernel
 public import Span_Raw_Primitives
+internal import ISO_9945_Kernel_File
 
 extension Sockets.TCP {
 
@@ -13,12 +14,8 @@ extension Sockets.TCP {
     ///
     /// Owns the accepted kernel descriptor and holds the
     /// `IO<Sockets.Capabilities>` it was produced from. Byte-level
-    /// read/write/close are delegated to the capability closures over
-    /// the stored ``Kernel/Descriptor`` — the socket-domain typing is
-    /// consumed at the accept boundary (Path A — see
-    /// `swift-io/Research/io-phase-2-plan.md` §4.A.0; on POSIX the
-    /// socket descriptor and the generic descriptor are the same
-    /// move-only type since the Cycle 21 unification).
+    /// read/write/close are delegated to the capability closures over the
+    /// stored ``Kernel/Descriptor``.
     ///
     /// ## Ownership
     ///
@@ -74,6 +71,28 @@ extension Sockets.TCP {
 // MARK: - Byte-level I/O
 
 extension Sockets.TCP.Connection {
+
+    /// Attempts one synchronous read into an output frontier, without waiting.
+    package borrowing func read(
+        into output: inout Swift.OutputSpan<Byte>
+    ) throws(Sockets.Error) -> Int {
+        do throws(ISO_9945.Kernel.IO.Read.Error) {
+            return try ISO_9945.Kernel.IO.Read.read(descriptor, into: &output)
+        } catch {
+            throw Sockets.Error(error)
+        }
+    }
+
+    /// Attempts one synchronous write from a borrowed span, without waiting.
+    package borrowing func write(
+        from span: borrowing Swift.Span<Byte>
+    ) throws(Sockets.Error) -> Int {
+        do throws(ISO_9945.Kernel.IO.Write.Error) {
+            return try ISO_9945.Kernel.IO.Write.write(descriptor, from: span)
+        } catch {
+            throw Sockets.Error(error)
+        }
+    }
 
     /// Read up to `buffer.count` bytes into `buffer`. Returns bytes read (0 at EOF).
     ///
