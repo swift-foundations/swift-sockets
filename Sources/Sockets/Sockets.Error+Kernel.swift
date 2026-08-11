@@ -45,7 +45,11 @@ extension Sockets.Error {
     /// `connect` / `send` / `receive` capability bindings on
     /// ``Kernel/Thread/Actor`` and by the reactive connect sequence.
     internal init(_ error: Kernel.Socket.Error) {
-        self.init(code: error.code)
+        if Error_Primitives.Error.Code.POSIX.isEAGAIN(error.code) {
+            self = .wouldBlock
+        } else {
+            self.init(code: error.code)
+        }
     }
 
     /// Maps a descriptor-control failure produced by the strategy prepare

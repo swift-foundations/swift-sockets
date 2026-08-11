@@ -16,7 +16,10 @@ let package = Package(
         .library(name: "Sockets Byte Channel", targets: ["Sockets Byte Channel"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/swift-foundations/swift-io.git", branch: "main"),
+        .package(
+            url: "https://github.com/swift-foundations/swift-io.git",
+            branch: "main"
+        ),
         .package(
             url: "https://github.com/swift-foundations/swift-byte-channel.git",
             branch: "main"

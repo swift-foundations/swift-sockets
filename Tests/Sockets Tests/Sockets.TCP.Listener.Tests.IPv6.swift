@@ -32,7 +32,7 @@ extension Sockets.TCP.Listener.Tests.`Sockets.TCP.Listener — IPv6 echo` {
         strategy: Sockets.TCP.Listener.Tests.Strategy
     ) async throws {
         let (_, listener) = try await makeIPv6Server(strategy)
-        let clientIO = strategy.makeIO()
+        let clientIO = try strategy.makeIO()
         let port = try await listener.port()
 
         let payload: [UInt8] = [0x01, 0x23, 0x45, 0x67, 0x89]
@@ -58,21 +58,13 @@ extension Sockets.TCP.Listener.Tests.`Sockets.TCP.Listener — IPv6 echo` {
 private func makeIPv6Server(
     _ strategy: Sockets.TCP.Listener.Tests.Strategy
 ) async throws -> (IO<Sockets.Capabilities>, Sockets.TCP.Listener) {
-    let io = strategy.makeIO()
-    let listener: Sockets.TCP.Listener
-    switch strategy {
-    case .blocking:
-        listener = try Sockets.TCP.Listener.blocking(
-            address: Kernel.Socket.Address.IPv6.loopback(port: 0),
-            io: io
-        )
-
-    case .reactive:
-        listener = try Sockets.TCP.Listener.reactive(
-            address: Kernel.Socket.Address.IPv6.loopback(port: 0),
-            io: io
-        )
-    }
+    let io = try strategy.makeIO()
+    let listenerIO: IO<Sockets.TCP.Listener.Capabilities> = try .events()
+    let listener = try Sockets.TCP.Listener.open(
+        address: Kernel.Socket.Address.IPv6.loopback(port: 0),
+        listenerIO: listenerIO,
+        connectionIO: io
+    )
     return (io, listener)
 }
 

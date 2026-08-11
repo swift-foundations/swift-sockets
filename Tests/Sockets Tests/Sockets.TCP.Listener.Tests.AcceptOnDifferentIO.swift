@@ -52,11 +52,9 @@ extension Sockets.TCP.Listener.Tests.`Accept On Different IO` {
         async throws
     {
         // Owned executors — no shared-pool pins (see file header).
-        let listenerExecutor = Kernel.Thread.Executor(mode: .serial)
         let acceptExecutor = Kernel.Thread.Executor(mode: .serial)
         let clientExecutor = Kernel.Thread.Executor(mode: .serial)
         defer {
-            listenerExecutor.shutdown()
             acceptExecutor.shutdown()
             clientExecutor.shutdown()
         }
@@ -64,10 +62,12 @@ extension Sockets.TCP.Listener.Tests.`Accept On Different IO` {
         // Listener's own IO — the accept-loop thread. The marker is never
         // installed here, so if the marker fires, it can only be because
         // the connection actually read through acceptIO's capabilities.
-        let listenerIO = IO<Sockets.Capabilities>.blocking(on: listenerExecutor)
-        let listener = try Sockets.TCP.Listener.blocking(
+        let listenerIO: IO<Sockets.TCP.Listener.Capabilities> = try .events()
+        let defaultConnectionIO = IO<Sockets.Capabilities>.blocking(on: acceptExecutor)
+        let listener = try Sockets.TCP.Listener.open(
             address: Kernel.Socket.Address.IPv4.loopback(port: 0),
-            io: listenerIO
+            listenerIO: listenerIO,
+            connectionIO: defaultConnectionIO
         )
         let port = try await listener.port()
 
