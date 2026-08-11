@@ -16,14 +16,17 @@ let package = Package(
         .library(name: "Sockets Byte Channel", targets: ["Sockets Byte Channel"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/swift-foundations/swift-io.git", branch: "main"),
+        .package(
+            url: "https://github.com/swift-foundations/swift-io.git",
+            revision: "81d1969e7734b0afeecbdb774dcc0120300a103e"
+        ),
         .package(
             url: "https://github.com/swift-foundations/swift-byte-channel.git",
             revision: "dfc56d1ed173aae4db784018c746050cbfbe4ee7"
         ),
         .package(
             url: "https://github.com/swift-foundations/swift-kernel.git",
-            revision: "f12f7def2eb02bd910d7e5e8d72160216f92b078"
+            revision: "046fa8659caa9c11b8aedfa83b88f308eab17e7a"
         ),
         .package(url: "https://github.com/swift-foundations/swift-threads.git", branch: "main"),
         .package(url: "https://github.com/swift-foundations/swift-executors.git", branch: "main"),

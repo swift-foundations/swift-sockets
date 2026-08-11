@@ -17,7 +17,7 @@
 /// Groups the types that parameterize the generic `IO` bundle for the
 /// sockets domain: ``Sockets/Capabilities`` (what operations exist),
 /// ``Sockets/Error`` (the error domain), and the per-strategy factories
-/// (`IO<Sockets.Capabilities>.blocking()` and `.events()`); a completions /
-/// proactor factory remains future work. The TCP endpoints live under
-/// ``Sockets/TCP``.
+/// (`IO<Sockets.Capabilities>.blocking()` and `.events()`). Listener
+/// acceptance has its own cancellable lifecycle capability and intentionally
+/// has no blocking strategy. The TCP endpoints live under ``Sockets/TCP``.
 public enum Sockets {}

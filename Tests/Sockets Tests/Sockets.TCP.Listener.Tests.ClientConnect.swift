@@ -29,7 +29,7 @@ extension Sockets.TCP.Listener.Tests.`Client Connect` {
     )
     func `connect() client echoes payload round-trip per IO strategy`(strategy: Sockets.TCP.Listener.Tests.Strategy) async throws {
         let (_, listener) = try await Sockets.TCP.Listener.Tests.Strategy.makeServer(strategy)
-        let clientIO = strategy.makeIO()
+        let clientIO = try strategy.makeIO()
         let port = try await listener.port()
 
         let payload: [UInt8] = [0xC0, 0xDE, 0xF0, 0x0D]
