@@ -21,10 +21,9 @@ let package = Package(
             url: "https://github.com/swift-foundations/swift-byte-channel.git",
             revision: "6a7eaf41b153f332ac2f144d105197c4b00c2a2e"
         ),
-        .package(url: "https://github.com/swift-foundations/swift-kernel.git", branch: "main"),
         .package(
-            url: "https://github.com/swift-iso/swift-iso-9945.git",
-            revision: "00ab4956fd6e8e20798684150e990bab39d27e08"
+            url: "https://github.com/swift-foundations/swift-kernel.git",
+            revision: "082072ff93620a11e9a118af587cc0fa8da0fc93"
         ),
         .package(url: "https://github.com/swift-foundations/swift-threads.git", branch: "main"),
         .package(url: "https://github.com/swift-foundations/swift-executors.git", branch: "main"),
@@ -44,7 +43,6 @@ let package = Package(
                 .product(name: "Executors", package: "swift-executors"),
                 .product(name: "Span Raw Primitives", package: "swift-span-primitives"),
                 .product(name: "Byte Primitives", package: "swift-byte-primitives"),
-                .product(name: "ISO 9945 Kernel File", package: "swift-iso-9945"),
             ]
         ),
         .target(

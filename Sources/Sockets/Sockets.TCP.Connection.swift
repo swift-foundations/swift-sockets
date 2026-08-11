@@ -6,7 +6,6 @@
 public import IO
 public import Kernel
 public import Span_Raw_Primitives
-internal import ISO_9945_Kernel_File
 
 extension Sockets.TCP {
 
@@ -76,9 +75,9 @@ extension Sockets.TCP.Connection {
     package borrowing func read(
         into output: inout Swift.OutputSpan<Byte>
     ) throws(Sockets.Error) -> Int {
-        do throws(ISO_9945.Kernel.IO.Read.Error) {
-            return try ISO_9945.Kernel.IO.Read.read(descriptor, into: &output)
-        } catch {
+        do throws(Kernel.IO.Read.Error) {
+            return try Kernel.IO.Read.read(descriptor, into: &output)
+        } catch let error {
             throw Sockets.Error(error)
         }
     }
@@ -87,9 +86,9 @@ extension Sockets.TCP.Connection {
     package borrowing func write(
         from span: borrowing Swift.Span<Byte>
     ) throws(Sockets.Error) -> Int {
-        do throws(ISO_9945.Kernel.IO.Write.Error) {
-            return try ISO_9945.Kernel.IO.Write.write(descriptor, from: span)
-        } catch {
+        do throws(Kernel.IO.Write.Error) {
+            return try Kernel.IO.Write.write(descriptor, from: span)
+        } catch let error {
             throw Sockets.Error(error)
         }
     }

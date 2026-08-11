@@ -9,7 +9,6 @@
 //
 
 internal import Kernel
-internal import ISO_9945_Kernel_File
 
 extension Sockets.Error {
 
@@ -20,7 +19,10 @@ extension Sockets.Error {
     /// (swift-io's Basic domain explicitly delegates this case to the
     /// socket layer). Other codes fold into ``Sockets/Error/platform(_:)``.
     internal init(_ error: Kernel.IO.Read.Error) {
-        self.init(code: error.code)
+        switch error {
+        case .blocking(.wouldBlock): self = .wouldBlock
+        default: self.init(code: error.code)
+        }
     }
 
     /// Maps a kernel write error onto the sockets domain.
@@ -29,19 +31,6 @@ extension Sockets.Error {
     /// codes — including `EPIPE`, which is fd-generic rather than
     /// socket-specific — fold into ``Sockets/Error/platform(_:)``.
     internal init(_ error: Kernel.IO.Write.Error) {
-        self.init(code: error.code)
-    }
-
-    /// Maps an exact ISO 9945 file-read attempt without leaking its error.
-    internal init(_ error: ISO_9945.Kernel.IO.Read.Error) {
-        switch error {
-        case .blocking(.wouldBlock): self = .wouldBlock
-        default: self.init(code: error.code)
-        }
-    }
-
-    /// Maps an exact ISO 9945 file-write attempt without leaking its error.
-    internal init(_ error: ISO_9945.Kernel.IO.Write.Error) {
         switch error {
         case .blocking(.wouldBlock): self = .wouldBlock
         default: self.init(code: error.code)

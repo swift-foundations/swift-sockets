@@ -30,6 +30,14 @@ extension Sockets.TCP.Connection {
             self.channelToSocket = channelToSocket
         }
 
+        /// Dropping the unique owner synchronously initiates both directional
+        /// cancellations. Each task then converges through storage's once-only
+        /// connection close; explicit ``close()`` additionally joins them.
+        deinit {
+            socketToChannel.cancel()
+            channelToSocket.cancel()
+        }
+
         /// Cancels both directions, awaits them, and releases the endpoint once.
         public consuming func close() async {
             socketToChannel.cancel()
@@ -101,36 +109,75 @@ actor __SocketsTCPConnectionPumpStorage<Failure: Swift.Error & Sendable> {
 
     @usableFromInline
     func socketToChannel() async {
-        do {
-            while !Task.isCancelled {
-                guard let chunk = try await connection?.read(maximum: maximum) else {
-                    channel?.writer.finish()
-                    return
-                }
-                try await channel?.writer.send(consume chunk)
+        while !Task.isCancelled {
+            let chunk: Byte.Chunk?
+            do throws(Sockets.Error) {
+                chunk = try await connection?.read(maximum: maximum)
+            } catch let error {
+                channel?.writer.fail(consume failure(error))
+                await close()
+                return
             }
-        } catch let error as Sockets.Error {
-            channel?.writer.fail(consume failure(error))
-        } catch {
-            await close()
+
+            guard let chunk else {
+                channel?.writer.finish()
+                return
+            }
+
+            do throws(Byte.Channel<Failure>.Error) {
+                try await channel?.writer.send(consume chunk)
+            } catch let error {
+                switch error {
+                case .closed, .cancelled, .finished:
+                    break
+                case .failed(let terminal):
+                    channel?.reader.fail(consume terminal)
+                case .full, .empty:
+                    preconditionFailure("suspending channel send returned an immediate-only outcome")
+                }
+                await close()
+                return
+            }
         }
         await close()
     }
 
     @usableFromInline
     func channelToSocket() async {
-        do {
-            while !Task.isCancelled {
-                guard let chunk = try await channel?.reader.receive() else {
-                    try connection?.shutdown(how: .write)
-                    return
+        while !Task.isCancelled {
+            let chunk: Byte.Chunk?
+            do throws(Byte.Channel<Failure>.Error) {
+                chunk = try await channel?.reader.receive()
+            } catch let error {
+                switch error {
+                case .closed, .cancelled, .finished:
+                    break
+                case .failed(let terminal):
+                    channel?.writer.fail(consume terminal)
+                case .full, .empty:
+                    preconditionFailure("suspending channel receive returned an immediate-only outcome")
                 }
-                try await connection?.write(consume chunk)
+                await close()
+                return
             }
-        } catch let error as Sockets.Error {
-            channel?.reader.fail(consume failure(error))
-        } catch {
-            await close()
+
+            guard let chunk else {
+                do throws(Sockets.Error) {
+                    try connection?.shutdown(how: .write)
+                } catch let error {
+                    channel?.reader.fail(consume failure(error))
+                    await close()
+                }
+                return
+            }
+
+            do throws(Sockets.Error) {
+                try await connection?.write(consume chunk)
+            } catch let error {
+                channel?.reader.fail(consume failure(error))
+                await close()
+                return
+            }
         }
         await close()
     }

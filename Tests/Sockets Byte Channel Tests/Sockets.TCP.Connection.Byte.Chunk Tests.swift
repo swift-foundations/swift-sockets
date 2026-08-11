@@ -10,6 +10,7 @@ import Testing
 
     @Test func `pump static surface carries a typed injected failure and byte maximum`() {
         _ = PumpStaticCoverage.pump
+        _ = PumpStaticCoverage.close
     }
 }
 
@@ -21,5 +22,11 @@ private enum PumpStaticCoverage {
         failure: @escaping @Sendable (Sockets.Error) -> Sockets.Error
     ) -> sending Sockets.TCP.Connection.Pump<Sockets.Error> {
         connection.pump(consume channel, maximum: maximum, failure: failure)
+    }
+
+    static func close(
+        _ pump: consuming Sockets.TCP.Connection.Pump<Sockets.Error>
+    ) async {
+        await pump.close()
     }
 }
