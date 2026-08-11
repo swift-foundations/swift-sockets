@@ -124,9 +124,17 @@ actor __SocketsTCPConnectionPumpStorage<Failure: Swift.Error & Sendable> {
                 return
             }
 
-            do throws(Byte.Channel<Failure>.Error) {
-                try await channel?.writer.send(consume chunk)
-            } catch let error {
+            guard let outcome = await channel?.writer.send(consume chunk) else {
+                await close()
+                return
+            }
+            switch consume outcome {
+            case .sent:
+                continue
+            case .rejected(let rejected, let error):
+                // Rejection returns ownership. This pump terminates rather than
+                // retrying a terminal channel, so destruction is deliberate.
+                _ = consume rejected
                 switch error {
                 case .closed, .cancelled, .finished:
                     break
