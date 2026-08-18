@@ -34,7 +34,10 @@ extension Sockets.Event.Tests {
             let clientPort = try client.port()
             let payload: [UInt8] = [0xd1, 0x5c, 0x0f, 0xfe]
 
-            let send = UnsafeMutableRawBufferPointer.allocate(byteCount: payload.count, alignment: 1)
+            let send = UnsafeMutableRawBufferPointer.allocate(
+                byteCount: payload.count,
+                alignment: 1
+            )
             defer { unsafe send.deallocate() }
             for (index, byte) in payload.enumerated() {
                 unsafe send[index] = byte

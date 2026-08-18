@@ -33,7 +33,9 @@ extension Sockets.TCP.Listener.Tests.`Half Close` {
     @Test(
         arguments: Sockets.TCP.Listener.Tests.Strategy.allCases
     )
-    func `half-close echo: shutdown(.write) sends FIN, peer reads EOF per IO strategy`(strategy: Sockets.TCP.Listener.Tests.Strategy) async throws {
+    func `half-close echo: shutdown(.write) sends FIN, peer reads EOF per IO strategy`(
+        strategy: Sockets.TCP.Listener.Tests.Strategy
+    ) async throws {
         let (_, listener) = try await Sockets.TCP.Listener.Tests.Strategy.makeServer(strategy)
         let clientIO = IO<Sockets.Capabilities>.blocking()
         let port = try await listener.port()
@@ -77,10 +79,16 @@ extension Sockets.TCP.Listener.Tests.`Half Close` {
                 let descriptor = consume socket
 
                 // Write payload.
-                let wbuf = UnsafeMutableRawBufferPointer.allocate(byteCount: payload.count, alignment: 1)
+                let wbuf = UnsafeMutableRawBufferPointer.allocate(
+                    byteCount: payload.count,
+                    alignment: 1
+                )
                 defer { unsafe wbuf.deallocate() }
                 for (i, b) in payload.enumerated() { unsafe wbuf[i] = b }
-                _ = try await clientIO.write(to: descriptor, from: unsafe .init(UnsafeRawBufferPointer(wbuf)))
+                _ = try await clientIO.write(
+                    to: descriptor,
+                    from: unsafe .init(UnsafeRawBufferPointer(wbuf))
+                )
 
                 // Half-close write — sends FIN to server.
                 try Kernel.Socket.Shutdown.shutdown(descriptor, how: .write)

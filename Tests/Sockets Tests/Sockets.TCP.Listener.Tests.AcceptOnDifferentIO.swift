@@ -47,7 +47,10 @@ extension Sockets.TCP.Listener.Tests {
 extension Sockets.TCP.Listener.Tests.`Accept On Different IO` {
 
     @Test
-    func `accept(io:) homes the accepted connection's byte-level IO on the supplied IO rather than the listener's own IO`() async throws {
+    func
+        `accept(io:) homes the accepted connection's byte-level IO on the supplied IO rather than the listener's own IO`()
+        async throws
+    {
         // Owned executors — no shared-pool pins (see file header).
         let listenerExecutor = Kernel.Thread.Executor(mode: .serial)
         let acceptExecutor = Kernel.Thread.Executor(mode: .serial)
@@ -97,10 +100,16 @@ extension Sockets.TCP.Listener.Tests.`Accept On Different IO` {
                 let descriptor = consume socket
                 let clientIO = IO<Sockets.Capabilities>.blocking(on: clientExecutor)
 
-                let writeBuffer = UnsafeMutableRawBufferPointer.allocate(byteCount: payload.count, alignment: 1)
+                let writeBuffer = UnsafeMutableRawBufferPointer.allocate(
+                    byteCount: payload.count,
+                    alignment: 1
+                )
                 defer { unsafe writeBuffer.deallocate() }
                 for (i, byte) in payload.enumerated() { unsafe writeBuffer[i] = byte }
-                _ = try await clientIO.write(to: descriptor, from: unsafe .init(UnsafeRawBufferPointer(writeBuffer)))
+                _ = try await clientIO.write(
+                    to: descriptor,
+                    from: unsafe .init(UnsafeRawBufferPointer(writeBuffer))
+                )
 
                 await clientIO.close(consume descriptor)
             }
@@ -129,7 +138,10 @@ extension ReadMarker {
 /// marker; every other capability and the runner forward unchanged. Used
 /// to observe which `IO` value a `Sockets.TCP.Connection` actually
 /// delegates through, since `IO` carries no equatable identity.
-private func markedIO(wrapping inner: IO<Sockets.Capabilities>, marker: ReadMarker) -> IO<Sockets.Capabilities> {
+private func markedIO(
+    wrapping inner: IO<Sockets.Capabilities>,
+    marker: ReadMarker
+) -> IO<Sockets.Capabilities> {
     let capabilities = Sockets.Capabilities(
         prepare: inner.capabilities.prepare,
         read: { fd, buffer throws(Sockets.Error) -> Int in

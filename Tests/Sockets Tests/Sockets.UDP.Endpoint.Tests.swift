@@ -94,7 +94,10 @@ extension Sockets.UDP.Endpoint.Tests.`Sockets.UDP.Endpoint — datagram round-tr
         var clientBytes: [UInt8] = []
         clientBytes.reserveCapacity(echoCount)
         for i in 0..<echoCount { clientBytes.append(unsafe clientRecvPtr[i]) }
-        #expect(clientBytes == payload, "Client received its datagram echoed back to its peer address.")
+        #expect(
+            clientBytes == payload,
+            "Client received its datagram echoed back to its peer address."
+        )
 
         await server.close()
         await client.close()
@@ -150,7 +153,10 @@ extension Sockets.UDP.Endpoint.Tests.`Sockets.UDP.Endpoint — datagram round-tr
         var clientBytes: [UInt8] = []
         clientBytes.reserveCapacity(echoCount)
         for i in 0..<echoCount { clientBytes.append(unsafe clientRecvPtr[i]) }
-        #expect(clientBytes == payload, "Client received its datagram echoed back to its peer address.")
+        #expect(
+            clientBytes == payload,
+            "Client received its datagram echoed back to its peer address."
+        )
 
         await server.close()
         await client.close()

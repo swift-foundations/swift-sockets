@@ -57,7 +57,9 @@ extension Sockets.Event.Tests {
                 address: address.storage,
                 length: Kernel.Socket.Address.IPv4.size
             )
-            Issue.record("A non-blocking connection to the closed local port completed without refusal.")
+            Issue.record(
+                "A non-blocking connection to the closed local port completed without refusal."
+            )
         } catch {
             #expect(error.code.isInProgress || error.code.isInterrupted)
             do throws(Sockets.Error) {
@@ -67,7 +69,10 @@ extension Sockets.Event.Tests {
             }
             do throws(Kernel.Socket.Error) {
                 let pending = try ISO_9945.Kernel.Socket.getError(descriptor)
-                #expect(pending != .posix(0), "Write readiness alone is not connection success; SO_ERROR must carry the refusal.")
+                #expect(
+                    pending != .posix(0),
+                    "Write readiness alone is not connection success; SO_ERROR must carry the refusal."
+                )
             } catch {
                 Issue.record("SO_ERROR retrieval failed: \(error)")
             }
@@ -80,7 +85,9 @@ extension Sockets.Event.Tests {
                 io: io
             )
             await connection.close()
-            Issue.record("The public event-backed connect factory must surface the refused SO_ERROR.")
+            Issue.record(
+                "The public event-backed connect factory must surface the refused SO_ERROR."
+            )
         } catch {
             guard case .platform(let code) = error else {
                 Issue.record("Expected a typed platform refusal, got \(error).")
@@ -117,7 +124,8 @@ extension Sockets.Event.Tests {
             return
         }
 
-        let failures = await withTaskGroup(of: Sockets.Error?.self, returning: [Sockets.Error].self) { group in
+        let failures = await withTaskGroup(of: Sockets.Error?.self, returning: [Sockets.Error].self)
+        { group in
             group.addTask {
                 do throws(Sockets.Error) {
                     let connection = try await listener.accept(io: io)
@@ -194,7 +202,8 @@ extension Sockets.Event.Tests {
         }
         let started = Gate()
 
-        let failures = await withTaskGroup(of: Sockets.Error?.self, returning: [Sockets.Error].self) { group in
+        let failures = await withTaskGroup(of: Sockets.Error?.self, returning: [Sockets.Error].self)
+        { group in
             group.addTask {
                 do throws(Sockets.Error) {
                     let connection = try await listener.accept(io: io)
@@ -216,7 +225,10 @@ extension Sockets.Event.Tests {
                             to: Kernel.Socket.Address.IPv4.loopback(port: port),
                             io: io
                         )
-                        let buffer = UnsafeMutableRawBufferPointer.allocate(byteCount: 1, alignment: 1)
+                        let buffer = UnsafeMutableRawBufferPointer.allocate(
+                            byteCount: 1,
+                            alignment: 1
+                        )
                         defer { unsafe buffer.deallocate() }
                         await started.open()
                         do throws(Sockets.Error) {

@@ -88,7 +88,9 @@ extension IO where Capabilities == Sockets.Capabilities {
     public func receive(
         on fd: borrowing Kernel.Descriptor,
         into buffer: Span.Raw.Mutable
-    ) async throws(Sockets.Error) -> (count: Int, peer: Kernel.Socket.Address.Storage, length: Kernel.Socket.Address.Length) {
+    ) async throws(Sockets.Error) -> (
+        count: Int, peer: Kernel.Socket.Address.Storage, length: Kernel.Socket.Address.Length
+    ) {
         try await capabilities.receive(fd, buffer)
     }
 

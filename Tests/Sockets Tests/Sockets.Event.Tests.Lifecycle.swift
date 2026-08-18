@@ -49,7 +49,9 @@ extension Sockets.Event.Tests {
     }
 
     @Test
-    func `owned shutdown stops loop but retains actor and executor until owner deinit`() async throws(Kernel.Event.Failure) {
+    func `owned shutdown stops loop but retains actor and executor until owner deinit`()
+        async throws(Kernel.Event.Failure)
+    {
         var actor: Kernel.Event.Actor? = try Kernel.Event.Actor()
         weak var weakActor: Kernel.Event.Actor?
         weakActor = actor
@@ -60,18 +62,26 @@ extension Sockets.Event.Tests {
         await owner!.shutdown()
         await owner!.shutdown()
         unsafe (_ = owner!.executor)
-        #expect(weakActor != nil, "Shutdown must retain the actor backing runner.executor for the owner lifetime.")
+        #expect(
+            weakActor != nil,
+            "Shutdown must retain the actor backing runner.executor for the owner lifetime."
+        )
 
         owner = nil
 
         for _ in 0..<100 where weakActor != nil {
             await Task.yield()
         }
-        #expect(weakActor == nil, "Actor release belongs to owner/IO deinitialization, not shutdown.")
+        #expect(
+            weakActor == nil,
+            "Actor release belongs to owner/IO deinitialization, not shutdown."
+        )
     }
 
     @Test
-    func `concurrent owned shutdown callers all join actor shutdown completion`() async throws(Kernel.Event.Failure) {
+    func `concurrent owned shutdown callers all join actor shutdown completion`()
+        async throws(Kernel.Event.Failure)
+    {
         let actor = try Kernel.Event.Actor()
         let owner = Sockets.Event.Owner(actor)
 

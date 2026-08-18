@@ -27,7 +27,9 @@ extension Sockets.TCP.Listener.Tests.`Client Connect` {
     @Test(
         arguments: Sockets.TCP.Listener.Tests.Strategy.allCases
     )
-    func `connect() client echoes payload round-trip per IO strategy`(strategy: Sockets.TCP.Listener.Tests.Strategy) async throws {
+    func `connect() client echoes payload round-trip per IO strategy`(
+        strategy: Sockets.TCP.Listener.Tests.Strategy
+    ) async throws {
         let (_, listener) = try await Sockets.TCP.Listener.Tests.Strategy.makeServer(strategy)
         let clientIO = strategy.makeIO()
         let port = try await listener.port()

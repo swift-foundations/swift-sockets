@@ -64,7 +64,9 @@ extension Sockets.TCP.Listener.Tests.Strategy {
     /// bound to IPv4 loopback on a kernel-assigned ephemeral port. Each
     /// cell pairs the strategy-appropriate listener factory (`.blocking`
     /// for the blocking strategy, `.reactive` for the reactive one).
-    static func makeServer(_ strategy: Self) async throws -> (IO<Sockets.Capabilities>, Sockets.TCP.Listener) {
+    static func makeServer(
+        _ strategy: Self
+    ) async throws -> (IO<Sockets.Capabilities>, Sockets.TCP.Listener) {
         let io = strategy.makeIO()
         let listener: Sockets.TCP.Listener
         switch strategy {
@@ -73,6 +75,7 @@ extension Sockets.TCP.Listener.Tests.Strategy {
                 address: Kernel.Socket.Address.IPv4.loopback(port: 0),
                 io: io
             )
+
         case .reactive:
             listener = try Sockets.TCP.Listener.reactive(
                 address: Kernel.Socket.Address.IPv4.loopback(port: 0),

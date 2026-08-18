@@ -98,7 +98,9 @@ extension Kernel.Thread.Actor {
     internal func receive(
         on descriptor: borrowing Kernel.Descriptor,
         into buffer: Span.Raw.Mutable
-    ) throws(Sockets.Error) -> (count: Int, peer: Kernel.Socket.Address.Storage, length: Kernel.Socket.Address.Length) {
+    ) throws(Sockets.Error) -> (
+        count: Int, peer: Kernel.Socket.Address.Storage, length: Kernel.Socket.Address.Length
+    ) {
         var buffer = buffer
         var span = buffer.mutableSpan
         do throws(Kernel.Socket.Error) {

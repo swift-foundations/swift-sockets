@@ -28,7 +28,9 @@ extension Sockets.TCP.Listener.Tests.`Sockets.TCP.Listener — IPv6 echo` {
     @Test(
         arguments: Sockets.TCP.Listener.Tests.Strategy.allCases
     )
-    func `single connection echoes payload round-trip over ::1 per IO strategy`(strategy: Sockets.TCP.Listener.Tests.Strategy) async throws {
+    func `single connection echoes payload round-trip over ::1 per IO strategy`(
+        strategy: Sockets.TCP.Listener.Tests.Strategy
+    ) async throws {
         let (_, listener) = try await makeIPv6Server(strategy)
         let clientIO = strategy.makeIO()
         let port = try await listener.port()
@@ -64,6 +66,7 @@ private func makeIPv6Server(
             address: Kernel.Socket.Address.IPv6.loopback(port: 0),
             io: io
         )
+
     case .reactive:
         listener = try Sockets.TCP.Listener.reactive(
             address: Kernel.Socket.Address.IPv6.loopback(port: 0),
