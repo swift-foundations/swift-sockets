@@ -93,7 +93,8 @@ extension Sockets.TCP.Connection {
         _ descriptor: borrowing Kernel.Descriptor,
         to address: Kernel.Socket.Address.Storage,
         length: Kernel.Socket.Address.Length,
-        ready: (borrowing Kernel.Descriptor, Kernel.Event.Interest) async throws(Sockets.Error) -> Void
+        ready: (borrowing Kernel.Descriptor, Kernel.Event.Interest) async throws(Sockets.Error) ->
+            Void
     ) async throws(Sockets.Error) {
         // The resource factory has already called its IO strategy's one-shot
         // prepare hook, so this descriptor is non-blocking.

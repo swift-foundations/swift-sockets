@@ -37,7 +37,8 @@ extension Sockets.Event.Tests {
         let gate = Gate()
         let count = 8 * 1_024 * 1_024
 
-        let failures = await withTaskGroup(of: Sockets.Error?.self, returning: [Sockets.Error].self) { group in
+        let failures = await withTaskGroup(of: Sockets.Error?.self, returning: [Sockets.Error].self)
+        { group in
             group.addTask {
                 do throws(Sockets.Error) {
                     let connection = try await listener.accept(io: io)
@@ -54,7 +55,9 @@ extension Sockets.Event.Tests {
                         let read = try await connection.read(into: unsafe .init(buffer))
                         #expect(read > 0)
                         (0..<read).forEach { index in
-                            #expect(unsafe buffer[index] == UInt8(truncatingIfNeeded: received + index))
+                            #expect(
+                                unsafe buffer[index] == UInt8(truncatingIfNeeded: received + index)
+                            )
                         }
                         received += read
                     }
@@ -99,7 +102,10 @@ extension Sockets.Event.Tests {
                         from: unsafe .init(UnsafeRawBufferPointer(buffer))
                     )
                     #expect(first > 0)
-                    #expect(first < count, "A constrained non-blocking send buffer must expose a partial write.")
+                    #expect(
+                        first < count,
+                        "A constrained non-blocking send buffer must expose a partial write."
+                    )
 
                     await gate.open()
                     var written = first
@@ -162,7 +168,8 @@ extension Sockets.Event.Tests {
         }
         let payload: [UInt8] = [0x20, 0x01, 0x0d, 0xb8, 0x06]
 
-        let failures = await withTaskGroup(of: Sockets.Error?.self, returning: [Sockets.Error].self) { group in
+        let failures = await withTaskGroup(of: Sockets.Error?.self, returning: [Sockets.Error].self)
+        { group in
             group.addTask {
                 do throws(Sockets.Error) {
                     let connection = try await listener.accept(io: io)

@@ -262,7 +262,9 @@ extension Sockets.TCP.Listener {
     /// // sharing the listener's.
     /// let connection = try await listener.accept(io: .blocking())
     /// ```
-    public func accept(io: IO<Sockets.Capabilities>) async throws(Sockets.Error) -> Sockets.TCP.Connection {
+    public func accept(
+        io: IO<Sockets.Capabilities>
+    ) async throws(Sockets.Error) -> Sockets.TCP.Connection {
         while true {
             try await _io.ready(from: _fd, interest: .read)
 

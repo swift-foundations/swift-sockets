@@ -168,7 +168,9 @@ extension Sockets.UDP.Endpoint {
     /// descriptor borrowed.
     public borrowing func receive(
         into buffer: Span.Raw.Mutable
-    ) async throws(Sockets.Error) -> (count: Int, peer: Kernel.Socket.Address.Storage, length: Kernel.Socket.Address.Length) {
+    ) async throws(Sockets.Error) -> (
+        count: Int, peer: Kernel.Socket.Address.Storage, length: Kernel.Socket.Address.Length
+    ) {
         try await io.receive(on: descriptor, into: buffer)
     }
 

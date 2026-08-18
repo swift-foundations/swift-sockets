@@ -25,9 +25,9 @@ extension Toolchain {
     /// `true` where real-reactor teardown triggers catalog §A9.
     static var hasTaggedMetadataSIGSEGV: Bool {
         #if compiler(<6.4)
-        return true
+            return true
         #else
-        return false
+            return false
         #endif
     }
 }

@@ -72,7 +72,12 @@ func makeReactiveIO() -> IO<Sockets.Capabilities> {
         send: { fd, buffer, address, length throws(Sockets.Error) -> Int in
             try await actor.testReactiveSend(on: fd, from: buffer, to: address, length: length)
         },
-        receive: { fd, buffer throws(Sockets.Error) -> (count: Int, peer: Kernel.Socket.Address.Storage, length: Kernel.Socket.Address.Length) in
+        receive: {
+            fd,
+            buffer throws(Sockets.Error) -> (
+                count: Int, peer: Kernel.Socket.Address.Storage,
+                length: Kernel.Socket.Address.Length
+            ) in
             try await actor.testReactiveReceive(on: fd, into: buffer)
         }
     )
@@ -121,7 +126,10 @@ extension Kernel.Thread.Actor {
     ) throws(Sockets.Error) -> Int {
         while true {
             do throws(Kernel.IO.Write.Error) {
-                return try unsafe Kernel.IO.Write.write(descriptor, from: unsafe buffer.base.nonNull)
+                return try unsafe Kernel.IO.Write.write(
+                    descriptor,
+                    from: unsafe buffer.base.nonNull
+                )
             } catch {
                 guard Error_Primitives.Error.Code.POSIX.isEAGAIN(error.code) else {
                     throw .platform(error.code)
@@ -161,7 +169,9 @@ extension Kernel.Thread.Actor {
     func testReactiveReceive(
         on descriptor: borrowing Kernel.Descriptor,
         into buffer: Span.Raw.Mutable
-    ) throws(Sockets.Error) -> (count: Int, peer: Kernel.Socket.Address.Storage, length: Kernel.Socket.Address.Length) {
+    ) throws(Sockets.Error) -> (
+        count: Int, peer: Kernel.Socket.Address.Storage, length: Kernel.Socket.Address.Length
+    ) {
         var buffer = buffer
         while true {
             do throws(Kernel.Socket.Error) {

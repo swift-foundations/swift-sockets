@@ -12,10 +12,12 @@
 
     extension Sockets.TCP.Listener.Tests.`Blocking Idle CPU` {
         final class Measurement: Sendable {
-            fileprivate let samples = Mutex<(
-                before: (instant: Clock.CPU.Thread.Instant, thread: Kernel.Thread.ID)?,
-                after: (instant: Clock.CPU.Thread.Instant, thread: Kernel.Thread.ID)?
-            )>((nil, nil))
+            fileprivate let samples = Mutex<
+                (
+                    before: (instant: Clock.CPU.Thread.Instant, thread: Kernel.Thread.ID)?,
+                    after: (instant: Clock.CPU.Thread.Instant, thread: Kernel.Thread.ID)?
+                )
+            >((nil, nil))
         }
     }
 
