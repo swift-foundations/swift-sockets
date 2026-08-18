@@ -48,6 +48,7 @@ extension Sockets.Error {
         switch error {
         case .handle(let error):
             self = .descriptor(error)
+
         case .platform(let error):
             self.init(code: error.code)
         }
