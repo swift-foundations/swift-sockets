@@ -19,11 +19,11 @@ let package = Package(
         .package(url: "https://github.com/swift-foundations/swift-io.git", branch: "main"),
         .package(
             url: "https://github.com/swift-foundations/swift-byte-channel.git",
-            revision: "0a7c65b4f12790337ff323e956e5adb691b92549"
+            branch: "main"
         ),
         .package(
             url: "https://github.com/swift-foundations/swift-kernel.git",
-            revision: "082072ff93620a11e9a118af587cc0fa8da0fc93"
+            branch: "main"
         ),
         .package(url: "https://github.com/swift-foundations/swift-threads.git", branch: "main"),
         .package(url: "https://github.com/swift-foundations/swift-executors.git", branch: "main"),
