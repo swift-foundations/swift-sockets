@@ -14,10 +14,8 @@ extension Sockets.TCP.Listener {
     /// linear acknowledgement of physical completion. Only strategies that
     /// provide that lifecycle may construct this capability.
     public struct Capabilities: Sendable {
+        // Reason: IO<Capabilities> is the intentional runtime strategy-erasure boundary.
+        // swiftlint:disable:next no_any_protocol_existential
         internal let strategy: any Sockets.TCP.Listener.Strategy
-
-        internal init(strategy: any Sockets.TCP.Listener.Strategy) {
-            self.strategy = strategy
-        }
     }
 }

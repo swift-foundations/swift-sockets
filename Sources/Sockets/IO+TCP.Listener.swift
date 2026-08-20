@@ -28,7 +28,9 @@ extension IO where Capabilities == Sockets.TCP.Listener.Capabilities {
         }
 
         /// Event-backed listener lifecycle owning a fresh Event actor.
-        public static func events() throws(Kernel.Event.Failure) -> IO<Sockets.TCP.Listener.Capabilities> {
+        public static func events() throws(Kernel.Event.Failure) -> IO<
+            Sockets.TCP.Listener.Capabilities
+        > {
             let actor = try Kernel.Event.Actor()
             let owner = Sockets.Event.Owner(actor)
             let strategy = Sockets.TCP.Listener.Events(actor: actor, owner: owner)

@@ -27,10 +27,10 @@ extension Sockets.Error {
         #else
             switch error {
             case .create(let code),
-                 .join(let code),
-                 .detach(let code),
-                 .keyCreate(let code),
-                 .keySet(let code):
+                .join(let code),
+                .detach(let code),
+                .keyCreate(let code),
+                .keySet(let code):
                 self = .platform(code)
             }
         #endif

@@ -41,13 +41,14 @@
                 } else {
                     actor = self.actor
                 }
-                let enlisted: (
-                    operation: IO<Sockets.TCP.Listener.Capabilities>.Operation<
-                        Sockets.TCP.Accepted,
-                        Event.Wait.Error<Kernel.Socket.Error>
-                    >,
-                    completion: IO<Sockets.TCP.Listener.Capabilities>.Completion
-                )
+                let enlisted:
+                    (
+                        operation: IO<Sockets.TCP.Listener.Capabilities>.Operation<
+                            Sockets.TCP.Accepted,
+                            Event.Wait.Error<Kernel.Socket.Error>
+                        >,
+                        completion: IO<Sockets.TCP.Listener.Capabilities>.Completion
+                    )
                 do throws(Kernel.Event.Failure) {
                     enlisted = try actor.enlist(
                         borrowing: descriptor,

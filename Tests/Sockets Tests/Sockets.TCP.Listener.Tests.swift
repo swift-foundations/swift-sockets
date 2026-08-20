@@ -42,7 +42,9 @@ extension Sockets.TCP.Listener.Tests.Strategy {
     }
 
     /// Constructs a server with a dedicated Event listener lifecycle.
-    static func makeServer(_ strategy: Self) async throws -> (IO<Sockets.Capabilities>, Sockets.TCP.Listener) {
+    static func makeServer(
+        _ strategy: Self
+    ) async throws -> (IO<Sockets.Capabilities>, Sockets.TCP.Listener) {
         let io = try strategy.makeIO()
         let listenerIO: IO<Sockets.TCP.Listener.Capabilities> = try .events()
         let listener = try Sockets.TCP.Listener.open(

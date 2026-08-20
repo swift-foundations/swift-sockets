@@ -131,6 +131,7 @@ actor __SocketsTCPConnectionPumpStorage<Failure: Swift.Error & Sendable> {
             switch consume outcome {
             case .sent:
                 continue
+
             case .rejected(let rejected, let error):
                 // Rejection returns ownership. This pump terminates rather than
                 // retrying a terminal channel, so destruction is deliberate.
@@ -138,10 +139,14 @@ actor __SocketsTCPConnectionPumpStorage<Failure: Swift.Error & Sendable> {
                 switch error {
                 case .closed, .cancelled, .finished:
                     break
+
                 case .failed(let terminal):
                     channel?.reader.fail(consume terminal)
+
                 case .full, .empty:
-                    preconditionFailure("suspending channel send returned an immediate-only outcome")
+                    preconditionFailure(
+                        "suspending channel send returned an immediate-only outcome"
+                    )
                 }
                 await close()
                 return
@@ -160,10 +165,14 @@ actor __SocketsTCPConnectionPumpStorage<Failure: Swift.Error & Sendable> {
                 switch error {
                 case .closed, .cancelled, .finished:
                     break
+
                 case .failed(let terminal):
                     channel?.writer.fail(consume terminal)
+
                 case .full, .empty:
-                    preconditionFailure("suspending channel receive returned an immediate-only outcome")
+                    preconditionFailure(
+                        "suspending channel receive returned an immediate-only outcome"
+                    )
                 }
                 await close()
                 return
