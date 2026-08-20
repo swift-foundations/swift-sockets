@@ -1,7 +1,0 @@
-import Sockets
-
-func transfer(
-    _ accepted: consuming Sockets.TCP.Accepted
-) -> sending Sockets.TCP.Accepted {
-    consume accepted
-}

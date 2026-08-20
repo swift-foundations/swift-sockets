@@ -22,9 +22,9 @@ extension Sockets {
     /// stream byte-ops (``read`` / ``write`` / ``close``) and the
     /// readiness primitive (``ready``), the surface carries the
     /// socket-native ``connect`` and the connectionless datagram
-    /// ``send`` / ``receive``. Listener acceptance is intentionally absent:
-    /// its independently cancellable result/completion lifecycle belongs to
-    /// ``Sockets/TCP/Listener/Capabilities`` and has no blocking conformer.
+    /// ``send`` / ``receive`` — `accept` stays composed at the call site
+    /// via ``ready`` (see ``Sockets/TCP/Listener``), matching swift-io's
+    /// manifest note on the Test-Support-quarantined Basic domain.
     ///
     /// ## Buffer Ownership
     ///
@@ -64,7 +64,10 @@ extension Sockets {
         /// Wait for a descriptor to become ready for the requested
         /// interest.
         ///
-        /// Readiness composition primitive for stream and datagram operations.
+        /// Readiness composition primitive. Consumers use this to
+        /// pre-wait before issuing a socket syscall that is not part of
+        /// the capability set (e.g., `POSIX.Kernel.Socket.Accept.accept`
+        /// after `ready(listener, .read)`).
         ///
         /// Strategy semantics:
         ///

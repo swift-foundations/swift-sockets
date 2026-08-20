@@ -12,30 +12,15 @@ let package = Package(
         .visionOS(.v27),
     ],
     products: [
-        .library(name: "Sockets", targets: ["Sockets"]),
-        .library(name: "Sockets Byte Channel", targets: ["Sockets Byte Channel"]),
+        .library(name: "Sockets", targets: ["Sockets"])
     ],
     dependencies: [
-        .package(
-            url: "https://github.com/swift-foundations/swift-io.git",
-            branch: "main"
-        ),
-        .package(
-            url: "https://github.com/swift-foundations/swift-byte-channel.git",
-            branch: "main"
-        ),
-        .package(
-            url: "https://github.com/swift-foundations/swift-kernel.git",
-            branch: "main"
-        ),
+        .package(url: "https://github.com/swift-foundations/swift-io.git", branch: "main"),
+        .package(url: "https://github.com/swift-foundations/swift-kernel.git", branch: "main"),
         .package(url: "https://github.com/swift-foundations/swift-threads.git", branch: "main"),
         .package(url: "https://github.com/swift-foundations/swift-executors.git", branch: "main"),
         .package(
             url: "https://github.com/swift-primitives/swift-span-primitives.git",
-            branch: "main"
-        ),
-        .package(
-            url: "https://github.com/swift-primitives/swift-byte-primitives.git",
             branch: "main"
         ),
         // Test-only: the reactive test-support IO factory pins a
@@ -51,20 +36,13 @@ let package = Package(
                 .product(name: "Thread Actor", package: "swift-threads"),
                 .product(name: "Executors", package: "swift-executors"),
                 .product(name: "Span Raw Primitives", package: "swift-span-primitives"),
-                .product(name: "Byte Primitives", package: "swift-byte-primitives"),
-            ]
-        ),
-        .target(
-            name: "Sockets Byte Channel",
-            dependencies: [
-                "Sockets",
-                .product(name: "Byte Chunk", package: "swift-byte-channel"),
             ]
         ),
         .testTarget(
             name: "Sockets Tests",
             dependencies: [
                 "Sockets",
+                .product(name: "IO", package: "swift-io"),
                 .product(name: "Kernel", package: "swift-kernel"),
                 .product(name: "Span Raw Primitives", package: "swift-span-primitives"),
                 // Test-only: reactive-strategy IO factory (see
@@ -75,11 +53,6 @@ let package = Package(
                 .product(name: "POSIX Kernel Poll", package: "swift-posix"),
             ],
             path: "Tests/Sockets Tests"
-        ),
-        .testTarget(
-            name: "Sockets Byte Channel Tests",
-            dependencies: ["Sockets Byte Channel"],
-            path: "Tests/Sockets Byte Channel Tests"
         ),
     ],
     swiftLanguageModes: [.v6]

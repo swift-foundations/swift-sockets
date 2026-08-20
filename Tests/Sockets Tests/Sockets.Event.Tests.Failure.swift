@@ -23,11 +23,9 @@ extension Sockets.Event.Tests {
 
         let port: UInt16
         do throws(Sockets.Error) {
-            let listenerIO: IO<Sockets.TCP.Listener.Capabilities> = try .events()
-            let listener = try Sockets.TCP.Listener.open(
+            let listener = try Sockets.TCP.Listener.reactive(
                 address: Kernel.Socket.Address.IPv4.loopback(port: 0),
-                listenerIO: listenerIO,
-                connectionIO: io
+                io: io
             )
             port = try await listener.port()
         } catch {
@@ -115,11 +113,9 @@ extension Sockets.Event.Tests {
         let listener: Sockets.TCP.Listener
         let port: UInt16
         do throws(Sockets.Error) {
-            let listenerIO: IO<Sockets.TCP.Listener.Capabilities> = try .events()
-            listener = try Sockets.TCP.Listener.open(
+            listener = try Sockets.TCP.Listener.reactive(
                 address: Kernel.Socket.Address.IPv4.loopback(port: 0),
-                listenerIO: listenerIO,
-                connectionIO: io
+                io: io
             )
             port = try await listener.port()
         } catch {
@@ -194,11 +190,9 @@ extension Sockets.Event.Tests {
         let listener: Sockets.TCP.Listener
         let port: UInt16
         do throws(Sockets.Error) {
-            let listenerIO: IO<Sockets.TCP.Listener.Capabilities> = try .events()
-            listener = try Sockets.TCP.Listener.open(
+            listener = try Sockets.TCP.Listener.reactive(
                 address: Kernel.Socket.Address.IPv4.loopback(port: 0),
-                listenerIO: listenerIO,
-                connectionIO: io
+                io: io
             )
             port = try await listener.port()
         } catch {

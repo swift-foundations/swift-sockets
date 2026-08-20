@@ -1,9 +1,0 @@
-import IO
-import Kernel
-import Sockets
-
-func applicationRelease(
-    _ listener: Sockets.TCP.Listener
-) -> @Sendable () async -> Void {
-    { await listener.release() }
-}
