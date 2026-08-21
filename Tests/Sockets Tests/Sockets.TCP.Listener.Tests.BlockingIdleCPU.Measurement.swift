@@ -1,8 +1,3 @@
-//
-//  Sockets.TCP.Listener.Tests.BlockingIdleCPU.Measurement.swift
-//  swift-sockets
-//
-
 #if os(macOS)
 
     import IO
@@ -22,10 +17,9 @@
     }
 
     extension Sockets.TCP.Listener.Tests.`Blocking Idle CPU`.Measurement {
-        /// Nested accessor for phase-sample capture.
+
         var record: Record { Record(measurement: self) }
 
-        /// Nested accessor for measurement-instrumented IO wrappers.
         var wrap: Wrap { Wrap(measurement: self) }
 
         func snapshot() -> (
@@ -47,14 +41,13 @@
     }
 
     extension Sockets.TCP.Listener.Tests.`Blocking Idle CPU`.Measurement.Record {
-        /// Samples the reactor thread just before accept readiness returns.
+
         func before() {
             measurement.samples.withLock { samples in
                 samples.before = (Clock.CPU.Thread.now(), Kernel.Thread.ID.current)
             }
         }
 
-        /// Samples the preparing thread as the accepted connection arrives.
         func after() {
             measurement.samples.withLock { samples in
                 samples.after = (Clock.CPU.Thread.now(), Kernel.Thread.ID.current)

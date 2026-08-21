@@ -1,8 +1,3 @@
-//
-//  Sockets.Event.Tests.Lifecycle.swift
-//  swift-sockets
-//
-
 import IO
 import Kernel
 import Testing

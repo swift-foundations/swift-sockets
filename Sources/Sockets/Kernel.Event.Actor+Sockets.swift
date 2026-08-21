@@ -1,16 +1,9 @@
-//
-//  Kernel.Event.Actor+Sockets.swift
-//  swift-sockets
-//
-
 internal import IO
 internal import Kernel
 internal import Span_Raw_Primitives
 
 extension Kernel.Event.Actor {
-    /// Reads once, waiting and re-arming only when the non-blocking
-    /// descriptor reports that it would block. A partial count is returned
-    /// unchanged; completion policy belongs to the caller.
+
     internal func read(
         from descriptor: borrowing Kernel.Descriptor,
         into buffer: Span.Raw.Mutable
@@ -30,9 +23,6 @@ extension Kernel.Event.Actor {
         }
     }
 
-    /// Writes once, waiting and re-arming only when the non-blocking
-    /// descriptor reports that it would block. Partial writes are returned
-    /// unchanged so higher layers can advance by the exact count.
     internal func write(
         to descriptor: borrowing Kernel.Descriptor,
         from buffer: Span.Raw
@@ -52,7 +42,6 @@ extension Kernel.Event.Actor {
         }
     }
 
-    /// Waits for one readiness interest on a registered descriptor.
     internal func ready(
         from descriptor: borrowing Kernel.Descriptor,
         interest: Kernel.Event.Interest
@@ -61,7 +50,6 @@ extension Kernel.Event.Actor {
         try await wait(for: registration, interest: interest)
     }
 
-    /// Sends one datagram, preserving the kernel's returned count.
     internal func send(
         on descriptor: borrowing Kernel.Descriptor,
         from buffer: Span.Raw,
@@ -85,7 +73,6 @@ extension Kernel.Event.Actor {
         }
     }
 
-    /// Receives one datagram and returns the kernel-reported sender.
     internal func receive(
         on descriptor: borrowing Kernel.Descriptor,
         into buffer: Span.Raw.Mutable
@@ -116,8 +103,6 @@ extension Kernel.Event.Actor {
         }
     }
 
-    /// Deregisters before closing so pending waiters observe channel
-    /// closure before the descriptor number can be reused.
     internal func close(_ descriptor: consuming Kernel.Descriptor) {
         deregister(Kernel.Event.ID(descriptor: descriptor))
         Sockets.Event.close(consume descriptor)

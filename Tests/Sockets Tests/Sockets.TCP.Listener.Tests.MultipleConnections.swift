@@ -1,30 +1,3 @@
-//
-//  Sockets.TCP.Listener.Tests.MultipleConnections.swift
-//  swift-sockets
-//
-//  Integration test: three concurrent clients echoed through one
-//  Sockets.TCP.Listener. Parameterized over the IO strategy matrix. The
-//  test-support reactive strategy serializes the three concurrent
-//  `listener.accept()` calls on the listener's pinned actor thread — each
-//  accept polls then accepts, so the historical single-suspended-receiver
-//  limitation on a real reactor's per-fd channel does not apply here.
-//
-//  Documents the thread-per-listener serialization model — every accept
-//  and the subsequent read/write/close for each accepted connection run
-//  on the listener's shared IO thread. Parallelism is not a bug here; it
-//  is the expected ownership semantic:
-//
-//  - One listener = one IO = one OS thread.
-//  - All three accepts and their echo round-trips serialize through that
-//    thread (via actor isolation on Sockets.TCP.Listener).
-//  - Clients use a separate IO (separate thread) so connect + write + read
-//    do not contend with the listener's thread.
-//
-//  For parallelism across connections, build N listeners backed by N
-//  distinct IOs (N threads) — swift-sockets does not implicitly pool
-//  listeners.
-//
-
 import IO
 import Kernel
 import Sockets
@@ -54,9 +27,6 @@ extension Sockets.TCP.Listener.Tests.`Multiple Connections` {
             [0xF0, 0xE1, 0xD2],
         ]
 
-        // Three servers accepting (all serialize through serverIO's single
-        // thread) and three clients connecting (all share clientIO but TCP
-        // sessions are independent, so per-session round-trip is correct).
         async let server0: [UInt8] = serverSideEcho(listener: listener)
         async let server1: [UInt8] = serverSideEcho(listener: listener)
         async let server2: [UInt8] = serverSideEcho(listener: listener)
@@ -83,24 +53,17 @@ extension Sockets.TCP.Listener.Tests.`Multiple Connections` {
         let serverEchoes = [s0, s1, s2]
         let clientReceives = [c0, c1, c2]
 
-        // Each TCP session is independent: a client's own payload always
-        // comes back to that same client. Order-independent across clients.
         #expect(
             Set(clientReceives) == Set(payloads),
             "Each client sees its own payload echoed back (order may differ by scheduling)."
         )
-        // Servers saw all three payloads across the three accepts, in some
-        // order determined by which client's SYN the kernel accepted first.
+
         #expect(
             Set(serverEchoes) == Set(payloads),
             "Server saw every payload exactly once across the three accepts."
         )
     }
 }
-
-// MARK: - Helpers (identical to Echo suite — duplicated rather than hoisted
-// because per [PATTERN-026] the tests are read top-to-bottom and the helpers
-// are the whole story).
 
 private func serverSideEcho(listener: Sockets.TCP.Listener) async throws -> [UInt8] {
     let connection = try await listener.accept()

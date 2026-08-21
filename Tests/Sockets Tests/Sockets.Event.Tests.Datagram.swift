@@ -1,8 +1,3 @@
-//
-//  Sockets.Event.Tests.Datagram.swift
-//  swift-sockets
-//
-
 import IO
 import Kernel
 import Span_Raw_Primitives

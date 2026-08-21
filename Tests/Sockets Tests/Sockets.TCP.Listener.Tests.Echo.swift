@@ -1,20 +1,3 @@
-//
-//  Sockets.TCP.Listener.Tests.Echo.swift
-//  swift-sockets
-//
-//  Integration test: single TCP connection echoed round-trip through a
-//  Sockets.TCP.Listener. Parameterized over the IO strategy matrix
-//  (blocking for Phase 2A; events / completions cells return in Phase
-//  2B / 2C). Each cell pairs the strategy-appropriate Listener factory
-//  (.blocking or .reactive) — see Sockets.TCP.Listener docs for the
-//  pairing contract.
-//
-//  Validates the TCA26 shared-executor composition end-to-end — the
-//  listener forwards its unownedExecutor to the IO's, and accept + read
-//  + write + close all run on the IO's dedicated thread via actor
-//  isolation.
-//
-
 import IO
 import Kernel
 import Sockets
@@ -54,12 +37,6 @@ extension Sockets.TCP.Listener.Tests.`Sockets.TCP.Listener — single connection
     }
 }
 
-// MARK: - Helpers
-//
-// Server-side: accept one connection, read up to 1 KiB, echo it back,
-// close. Returns the bytes the server read (which are also what it wrote
-// back).
-
 private func serverSideEcho(listener: Sockets.TCP.Listener) async throws -> [UInt8] {
     let connection = try await listener.accept()
 
@@ -86,9 +63,6 @@ private func serverSideEcho(listener: Sockets.TCP.Listener) async throws -> [UIn
     for i in 0..<readCount { bytes.append(unsafe buffer[i]) }
     return bytes
 }
-
-// Client-side: create a TCP socket, connect to 127.0.0.1:port, write
-// the payload, read back the echo, close. Returns the bytes received.
 
 private func clientSideRoundTrip(
     io: IO<Sockets.Capabilities>,

@@ -1,15 +1,9 @@
-//
-//  Sockets.Event.Tests.swift
-//  swift-sockets
-//
-
 import Testing
 
 @testable import Sockets
 
 extension Sockets.Event {
-    /// Serialized real-reactor fixtures. Each test creates and shuts down its
-    /// own polling actor and uses only local kernel sockets.
+
     @Suite(
         .serialized,
         .disabled(

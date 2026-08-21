@@ -1,9 +1,3 @@
-//
-//  Sockets.Event.Tests.Gate.swift
-//  swift-sockets
-//
-
-/// One-shot test synchronization without blocking a reactor thread.
 actor Gate {
     private var opened = false
     private var continuation: CheckedContinuation<Void, Never>?

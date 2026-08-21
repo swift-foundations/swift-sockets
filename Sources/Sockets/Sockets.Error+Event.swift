@@ -1,25 +1,8 @@
-//
-//  Sockets.Error+Event.swift
-//  swift-sockets
-//
-
 internal import IO
 internal import Kernel
 
 extension Sockets.Error {
-    /// Maps a strategy-level reactor failure into the sockets domain.
-    ///
-    /// Exhaustive semantic mapping:
-    ///
-    /// | Event error | Sockets error |
-    /// | --- | --- |
-    /// | `platform(code)` | existing platform-code disposition |
-    /// | `invalidDescriptor` | `descriptor(.invalid)` |
-    /// | `alreadyRegistered` | `registration(.duplicate)` |
-    /// | `notRegistered` | `registration(.missing)` |
-    /// | `deregistered` | `registration(.removed)` |
-    /// | `readClosed` / `writeClosed` | `closed(.read)` / `closed(.write)` |
-    /// | `notConnected` | `notConnected` |
+
     internal init(_ failure: Kernel.Event.Failure) {
         switch failure {
         case .left(.cancelled):

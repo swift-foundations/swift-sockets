@@ -1,16 +1,3 @@
-//
-//  Sockets.TCP.Listener.Tests.ClientConnect.swift
-//  swift-sockets
-//
-//  Integration test: client-side echo round-trip through the
-//  Sockets.TCP.Connection.connect factory (replacing the raw inline
-//  Kernel.Socket.Connect used by the other suites). Parameterized over the
-//  IO strategy matrix — the `.reactive` cell drives the non-blocking
-//  connect sequence (O_NONBLOCK → connect → poll(.write) → SO_ERROR) end
-//  to end, and the subsequent read/write travel the client's reactive
-//  EAGAIN-retry path.
-//
-
 import IO
 import Kernel
 import Sockets
@@ -50,11 +37,6 @@ extension Sockets.TCP.Listener.Tests.`Client Connect` {
     }
 }
 
-// MARK: - Helpers
-//
-// Server-side accept-and-echo is identical to the Echo suite; duplicated
-// rather than hoisted per [PATTERN-026] (tests read top-to-bottom).
-
 private func serverSideEcho(listener: Sockets.TCP.Listener) async throws -> [UInt8] {
     let connection = try await listener.accept()
 
@@ -81,10 +63,6 @@ private func serverSideEcho(listener: Sockets.TCP.Listener) async throws -> [UIn
     for i in 0..<readCount { bytes.append(unsafe buffer[i]) }
     return bytes
 }
-
-// Client-side: establish the connection via Sockets.TCP.Connection.connect
-// (rather than a raw Kernel.Socket.Connect), write the payload, read the
-// echo, close. Returns the bytes received.
 
 private func clientConnectRoundTrip(
     io: IO<Sockets.Capabilities>,

@@ -1,13 +1,8 @@
-//
-//  IO+Events.swift
-//  swift-sockets
-//
-
 public import IO
 internal import Kernel
 
 extension Sockets.Event {
-    /// Establishes the event strategy's non-blocking resource invariant.
+
     internal static func prepare(
         _ descriptor: borrowing Kernel.Descriptor
     ) throws(Sockets.Error) {
@@ -18,8 +13,6 @@ extension Sockets.Event {
         }
     }
 
-    /// Closes a descriptor after shutdown, when actor-backed registration is
-    /// no longer permitted. Close failures remain informational.
     internal static func close(_ descriptor: consuming Kernel.Descriptor) {
         do throws(Kernel.Close.Error) {
             try Kernel.Close.close(consume descriptor)
@@ -28,11 +21,7 @@ extension Sockets.Event {
 }
 
 extension IO where Capabilities == Sockets.Capabilities {
-    /// Event-backed socket I/O using a caller-owned reactor actor.
-    ///
-    /// The returned IO retains the actor while its closures exist, but its
-    /// runner shutdown hook neither stops the actor nor removes that
-    /// reference. The caller remains solely responsible for actor lifecycle.
+
     public static func events(
         on actor: Kernel.Event.Actor
     ) -> IO<Sockets.Capabilities> {
@@ -101,19 +90,12 @@ extension IO where Capabilities == Sockets.Capabilities {
         let runner = unsafe Self.Runner(
             executor: { unsafe actor.unownedExecutor },
             shutdown: {
-                // Caller-owned actor: no lifecycle action here.
+
             }
         )
         return IO(capabilities: capabilities, runner: runner)
     }
 
-    /// Event-backed socket I/O owning a fresh reactor actor.
-    ///
-    /// `runner.shutdown()` atomically prevents new actor-backed work and
-    /// stops the loop. The actor remains retained for the IO lifetime so the
-    /// public runner executor identity cannot dangle; actor/executor/source
-    /// storage is released only when the IO capability graph deinitializes.
-    /// Shutdown is idempotent and never holds synchronization across suspension.
     public static func events() throws(Kernel.Event.Failure) -> IO<Sockets.Capabilities> {
         let actor = try Kernel.Event.Actor()
         let owner = Sockets.Event.Owner(actor)

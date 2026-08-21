@@ -1,17 +1,3 @@
-//
-//  Sockets.Tests.ReactiveIO.swift
-//  swift-sockets
-//
-//  Test-support reactive `IO<Sockets.Capabilities>` factory. Exists ONLY
-//  to exercise the reactive (non-blocking + readiness) code paths that
-//  the blocking strategy short-circuits: the O_NONBLOCK accept loop, the
-//  reactive connect sequence, and the EAGAIN-retry read/write. It is NOT
-//  a public reactor factory — the real reactor-backed factories are
-//  swift-io's territory (Phase 2B / 2C). Readiness here is a blocking
-//  `poll(2)` on the pinned Kernel.Thread.Actor thread; a real reactor
-//  would await a kernel readiness event instead.
-//
-
 import Executors
 import IO
 import Kernel
@@ -20,20 +6,8 @@ import Sockets
 import Span_Raw_Primitives
 import Thread_Actor
 
-/// Process-scoped sharded executor pool for the reactive test IOs. Mirrors
-/// the blocking factory's process-scoped pool so each reactive IO pins one
-/// shard for the process lifetime rather than leaking a fresh thread per
-/// test invocation.
 private let _reactiveTestExecutors: Kernel.Thread.Executor.Sharded = .init()
 
-/// Builds a reactive-strategy `IO<Sockets.Capabilities>` pinned to a shard
-/// of the process-scoped reactive test pool.
-///
-/// The capability closures forward to reactive bindings on a pinned
-/// `Kernel.Thread.Actor`: read/write retry on `EAGAIN` after a poll, the
-/// `ready` primitive is a blocking `poll(2)`, and `connect` reuses the
-/// Sources ``Sockets/TCP/Connection/connectReactively(_:to:length:ready:)``
-/// sequence with this poll as its readiness primitive.
 func makeReactiveIO() -> IO<Sockets.Capabilities> {
     let actor = Kernel.Thread.Actor(executor: _reactiveTestExecutors.next())
     let capabilities = Sockets.Capabilities(
@@ -84,24 +58,14 @@ func makeReactiveIO() -> IO<Sockets.Capabilities> {
     let runner = unsafe IO<Sockets.Capabilities>.Runner(
         executor: { unsafe actor.unownedExecutor },
         shutdown: {
-            // Shards live for the process lifetime (shared pool); nothing
-            // to shut down per IO.
+
         }
     )
     return IO(capabilities: capabilities, runner: runner)
 }
 
-// MARK: - Reactive bindings on the pinned actor
-//
-// Test-module extensions on Kernel.Thread.Actor — visible only to the
-// test target. Each method runs on the actor's pinned thread; the poll
-// blocks that thread until the fd is ready, which is the reactive analog
-// of the blocking strategy sleeping inside the syscall.
-
 extension Kernel.Thread.Actor {
 
-    /// Reads into `buffer` on the pinned thread, polling for readability
-    /// and retrying on `EAGAIN`. Returns bytes read (0 at EOF).
     func testReactiveRead(
         from descriptor: borrowing Kernel.Descriptor,
         into buffer: Span.Raw.Mutable
@@ -118,8 +82,6 @@ extension Kernel.Thread.Actor {
         }
     }
 
-    /// Writes `buffer` on the pinned thread, polling for writability and
-    /// retrying on `EAGAIN`. Returns bytes written.
     func testReactiveWrite(
         to descriptor: borrowing Kernel.Descriptor,
         from buffer: Span.Raw
@@ -139,8 +101,6 @@ extension Kernel.Thread.Actor {
         }
     }
 
-    /// Sends a datagram on the pinned thread, polling for writability and
-    /// retrying on `EAGAIN`. Returns bytes sent.
     func testReactiveSend(
         on descriptor: borrowing Kernel.Descriptor,
         from buffer: Span.Raw,
@@ -164,8 +124,6 @@ extension Kernel.Thread.Actor {
         }
     }
 
-    /// Receives a datagram on the pinned thread, polling for readability
-    /// and retrying on `EAGAIN`. Returns bytes received and the sender.
     func testReactiveReceive(
         on descriptor: borrowing Kernel.Descriptor,
         into buffer: Span.Raw.Mutable
@@ -187,8 +145,6 @@ extension Kernel.Thread.Actor {
         }
     }
 
-    /// Blocks the pinned thread in `poll(2)` until `descriptor` is ready
-    /// for the requested interest. The reactive `ready` primitive.
     func testPollReady(
         _ descriptor: borrowing Kernel.Descriptor,
         interest: Kernel.Event.Interest
@@ -202,13 +158,11 @@ extension Kernel.Thread.Actor {
         }
     }
 
-    /// Closes `descriptor` on the pinned thread. Close errors are swallowed
-    /// (the fd is closed at the kernel level regardless).
     func testClose(_ descriptor: consuming Kernel.Descriptor) {
         do throws(Kernel.Close.Error) {
             try Kernel.Close.close(consume descriptor)
         } catch {
-            // fd is already closed — error is informational only.
+
         }
     }
 }

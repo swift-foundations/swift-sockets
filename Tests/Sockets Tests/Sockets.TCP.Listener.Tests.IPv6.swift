@@ -1,17 +1,3 @@
-//
-//  Sockets.TCP.Listener.Tests.IPv6.swift
-//  swift-sockets
-//
-//  Integration test: single TCP connection echoed round-trip over the IPv6
-//  loopback (::1), through the IPv6 Listener + Connection.connect factories.
-//  Parameterized over the IO strategy matrix.
-//
-//  NOTE: relies on an available IPv6 loopback. Standard on macOS and Linux;
-//  a container/CI host with IPv6 disabled fails socket creation / bind with
-//  EAFNOSUPPORT / EADDRNOTAVAIL. Guard to a platform if a gate host lacks
-//  ::1.
-//
-
 import IO
 import Kernel
 import Sockets
@@ -51,10 +37,6 @@ extension Sockets.TCP.Listener.Tests.`Sockets.TCP.Listener — IPv6 echo` {
     }
 }
 
-// MARK: - Helpers
-
-/// Construct an IPv6 server `IO` + `Listener` pair for the strategy, bound
-/// to the IPv6 loopback (::1) on a kernel-assigned ephemeral port.
 private func makeIPv6Server(
     _ strategy: Sockets.TCP.Listener.Tests.Strategy
 ) async throws -> (IO<Sockets.Capabilities>, Sockets.TCP.Listener) {
@@ -102,9 +84,6 @@ private func serverSideEcho(listener: Sockets.TCP.Listener) async throws -> [UIn
     for i in 0..<readCount { bytes.append(unsafe buffer[i]) }
     return bytes
 }
-
-// Client-side: connect to ::1 on `port` via Sockets.TCP.Connection.connect
-// (IPv6 overload), write the payload, read the echo, close.
 
 private func clientSideRoundTrip(
     io: IO<Sockets.Capabilities>,
